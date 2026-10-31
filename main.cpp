@@ -4,7 +4,7 @@
 #include <functional>
 #include <cassert>
 
-namespace tiamat {
+// namespace tiamat {
 
 // constexpr auto translationLayout = encodeLayout({
 //     //           Entry::zero  Entry::pone  Entry::mone  Entry::any
@@ -175,8 +175,8 @@ void testSparsity1() {
     }
 }
 
-void testMatrix1() {
-    // using namespace tiamat::experimental;
+void testMatrix0() {
+    using namespace tiamat;
     {
         constexpr Sparsity sparsity {
             std::array { Entry::pone, Entry::zero, Entry::any  },
@@ -203,13 +203,29 @@ void testMatrix1() {
         static_assert(get<2, 2>(matrix) == 1);
 
         // constexpr auto m00 = get<0, 0>(matrix);
+        auto result = matrix * matrix;
+        static_assert(std::is_same_v<decltype(result), decltype(matrix)>);
+        assert((get<0, 2>(result) == 2 * 666));
+        assert((get<1, 2>(result) == 2 * 667));
     }
+}
+
+void testTranslation0() {
+    using namespace tiamat;
+    Translation<int, 2> translation;
+    static_assert(decltype(translation)::sparsity.rows == 3);
+    static_assert(decltype(translation)::sparsity.columns == 3);
+    static_assert(IsMatrix<decltype(translation)>);
+    auto result = translation * translation;
+    static_assert(IsMatrix<decltype(result)>);
+    static_assert(std::is_same_v<decltype(result), decltype(translation)>);
 }
 
 void test() {
     testSparsity0();
     testSparsity1();
-    testMatrix1();
+    testMatrix0();
+    testTranslation0();
     // tiamat::Mat<float,
     //             Sparsity {
     //                 std::array { Entry::pone, Entry::zero, Entry::zero, Entry::any  },
@@ -371,12 +387,12 @@ void test() {
     // std::exit(0);
 };
 
-}  // namespace tiamat
 
 int main() {
     try {
-        std::cout << "Tiamat test" << std::endl;
-        tiamat::test();
+        std::cout << "Tiamat test begin" << std::endl;
+        test();
+        std::cout << "Tiamat test end" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "\033[1;31m[ERROR]\033[0m" << e.what() << std::endl;
         return EXIT_FAILURE;

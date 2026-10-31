@@ -1,5 +1,5 @@
 #pragma once
-#include "tiamat/sparsity.hpp"
+#include "tiamat/Sparsity.hpp"
 namespace tiamat {
 
 // template<typename V, Layout l>
@@ -117,9 +117,23 @@ class Matrix;
 template<IsArithmetic Value, IsSparsity auto sparsity>
 struct IsMatrixTrait<Matrix<Value, sparsity>> : std::true_type { };
 
+// Good ol' StackOverflow copypaste
+template<template<IsArithmetic, IsSparsity auto> class T, class U>
+struct isDerivedFrom {
+private:
+    template<IsArithmetic V, IsSparsity auto s>
+    static decltype(static_cast<const T<V, s>&>(std::declval<U>()), std::true_type {}) test(const T<V, s>&);
+
+    static std::false_type test(...);
+
+public:
+    static constexpr bool value = decltype(isDerivedFrom::test(std::declval<U>()))::value;
+};
+
 // Matrix concept
 template<typename T>
-concept IsMatrix = IsMatrixTrait<std::remove_cvref_t<T>>::value;
+concept IsMatrix = IsMatrixTrait<std::remove_cvref_t<T>>::value || isDerivedFrom<Matrix, T>::value;
+
 
 template<IsArithmetic V, IsSparsity auto s>
 class Matrix {
@@ -162,6 +176,43 @@ constexpr auto& get(Mat& M) {
     return M.data[index<Mat::sparsity, row, column>()];
 }
 
+template<IsArithmetic Value, IsSparsity auto sparsity>
+struct Dispatch {
+    using Type = Matrix<Value, sparsity>;
+};
+
+template<IsMatrix MatrixA, IsMatrix MatrixB>
+    requires(MatrixA::sparsity.columns == MatrixB::sparsity.rows)
+constexpr auto operator*(const MatrixA& A, const MatrixB& B) {
+    using CommonValue = std::common_type_t<typename MatrixA::Value, typename MatrixB::Value>;
+    using MatrixC     = typename Dispatch<CommonValue, MatrixA::sparsity * MatrixB::sparsity>::Type;
+    MatrixC C;
+    template for (constexpr auto row : std::views::indices(MatrixA::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(MatrixB::sparsity.columns)) {
+            template for (constexpr auto middle : std::views::indices(MatrixA::sparsity.columns)) {
+                if constexpr (MatrixC::sparsity[row][column] == Entry::any) {
+                    constexpr auto entryA = MatrixA::sparsity[row][middle];
+                    constexpr auto entryB = MatrixB::sparsity[middle][column];
+                    auto&          valueC = get<row, column>(C);
+                    if constexpr (entryA == Entry::any && entryB != Entry::any) {
+                        const auto&    valueA = get<row, middle>(A);
+                        constexpr auto valueB = get<middle, column>(B);
+                        valueC += valueA * valueB;
+                    } else if constexpr (entryA != Entry::any && entryB == Entry::any) {
+                        constexpr auto valueA = get<row, middle>(A);
+                        const auto&    valueB = get<middle, column>(B);
+                        valueC += valueA * valueB;
+                    } else if constexpr (entryA == Entry::any && entryB == Entry::any) {
+                        const auto& valueA = get<row, middle>(A);
+                        const auto& valueB = get<middle, column>(B);
+                        valueC += valueA * valueB;
+                    }
+                }
+            }
+        }
+    }
+    return C;
+}
 // }  // namespace experimental
 
 }  // namespace tiamat
