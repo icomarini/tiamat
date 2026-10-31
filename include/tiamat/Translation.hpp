@@ -23,7 +23,10 @@ consteval auto translationSparsity() {
 }
 
 template<typename Value, Size dimension>
-class Translation : public Matrix<Value, translationSparsity<dimension>()> { };
+class Translation : public Matrix<Value, translationSparsity<dimension>()> {
+public:
+    using Matrix<Value, translationSparsity<dimension>()>::Matrix;
+};
 
 // template<IsArithmetic Value>
 // struct Dispatch<Value, translationSparsity<0>()> {

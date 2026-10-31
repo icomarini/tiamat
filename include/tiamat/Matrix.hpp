@@ -1,101 +1,6 @@
 #pragma once
 #include "tiamat/Sparsity.hpp"
 namespace tiamat {
-
-// template<typename V, Layout l>
-//     requires(l != 0)
-// class Matrix {
-// public:
-//     using Value                    = V;
-//     static constexpr Layout layout = l;
-//     constexpr Matrix()
-//         : data {} { };
-
-//     template<typename... Vs>
-//     constexpr Matrix(Vs... vs)
-//         : data { vs... } {
-//     }
-
-//     template<uint8_t row, uint8_t col, typename VV, Layout ll>
-//     friend constexpr auto& get(const Matrix<VV, ll>& m);
-
-//     template<uint8_t row, uint8_t col, typename VV, Layout ll>
-//         requires(getEntry<row, col>(ll) == Entry::any)
-//     friend constexpr auto& get(Matrix<VV, ll>& m);
-
-// private:
-//     std::array<Value, count(layout, Entry::any)> data;
-// };
-
-// template<typename Value, Layout layout>
-// struct Dispatch {
-//     using Type = Matrix<Value, layout>;
-// };
-
-
-// template<typename T>
-// static constexpr T zero = T { 0 };
-
-// template<typename T>
-// static constexpr T one = T { 1 };
-
-
-// template<uint8_t row, uint8_t col, typename V, Layout l>
-// constexpr auto& get(const Matrix<V, l>& m) {
-//     constexpr auto e = getEntry<row, col>(l);
-//     if constexpr (e == Entry::zero) {
-//         return zero<V>;
-//     } else if constexpr (e == Entry::pone) {
-//         return one<V>;
-//     } else if constexpr (e == Entry::mone) {
-//         return -one<V>;
-//     } else {
-//         return m.data[index<row, col, l>()];
-//     }
-// }
-
-// template<uint8_t row, uint8_t col, typename Value, Layout layout>
-//     requires(getEntry<row, col>(layout) == Entry::any)
-// constexpr auto& get(Matrix<Value, layout>& m) {
-//     return m.data[index<row, col, layout>()];
-// }
-
-// template<typename ValueA, Layout layoutA, typename ValueB, Layout layoutB>
-// constexpr auto operator*(const Matrix<ValueA, layoutA>& A, const Matrix<ValueB, layoutB>& B) {
-//     constexpr auto layoutC = multiply(layoutA, layoutB);
-
-//     using CommonValue = std::common_type_t<ValueA, ValueB>;
-//     using MatrixC     = typename Dispatch<CommonValue, layoutC>::Type;
-//     MatrixC C;
-//     template for (constexpr auto row : std::views::iota(0, 4)) {
-//         template for (constexpr auto col : std::views::iota(0, 4)) {
-//             template for (constexpr auto mid : std::views::iota(0, 4)) {
-//                 if constexpr (getEntry<row, col>(layoutC) == Entry::any) {
-//                     constexpr auto entryA = getEntry<row, mid>(layoutA);
-//                     constexpr auto entryB = getEntry<mid, col>(layoutB);
-//                     auto&          valueC = get<row, col>(C);
-//                     if constexpr (entryA == Entry::any && entryB != Entry::any) {
-//                         const auto&    valueA = get<row, mid>(A);
-//                         constexpr auto valueB = get<mid, col>(B);
-//                         valueC += valueA * valueB;
-//                     } else if constexpr (entryA != Entry::any && entryB == Entry::any) {
-//                         constexpr auto valueA = get<row, mid>(A);
-//                         const auto&    valueB = get<mid, col>(B);
-//                         valueC += valueA * valueB;
-//                     } else if constexpr (entryA == Entry::any && entryB == Entry::any) {
-//                         const auto& valueA = get<row, mid>(A);
-//                         const auto& valueB = get<mid, col>(B);
-//                         valueC += valueA * valueB;
-//                     }
-//                 }
-//             }
-//         }
-//     }
-//     return C;
-// }
-
-// namespace experimental {
-// =========================================
 template<typename T>
 static constexpr T zero = T { 0 };
 
@@ -141,8 +46,14 @@ public:
     using Value                    = V;
     static constexpr auto sparsity = s;
 
-    Matrix()
+    constexpr Matrix()
         : data {} {
+    }
+
+    template<typename... Values>
+        requires((std::same_as<Value, Values> && ...) && sizeof...(Values) == count<sparsity, Entry::any>())
+    constexpr Matrix(Values... values)
+        : data { values... } {
     }
 
 private:

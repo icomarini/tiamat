@@ -15,7 +15,10 @@ consteval auto identitySparsity() {
 }
 
 template<typename Value, Size size>
-class Identity : public Matrix<Value, identitySparsity<size>()> { };
+class Identity : public Matrix<Value, identitySparsity<size>()> {
+public:
+    using Matrix<Value, identitySparsity<size>()>::Matrix;
+};
 
 template<IsArithmetic Value>
 struct Dispatch<Value, identitySparsity<1>()> {
@@ -31,4 +34,7 @@ template<IsArithmetic Value>
 struct Dispatch<Value, identitySparsity<3>()> {
     using Type = Identity<Value, 3>;
 };
+
+template<IsArithmetic Value, Size size>
+constexpr Identity<Value, size> identity;
 }  // namespace tiamat
