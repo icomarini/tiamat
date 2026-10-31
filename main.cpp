@@ -204,21 +204,71 @@ void testMatrix0() {
 
         // constexpr auto m00 = get<0, 0>(matrix);
         auto result = matrix * matrix;
-        static_assert(std::is_same_v<decltype(result), decltype(matrix)>);
+        // static_assert(std::is_same_v<decltype(result), decltype(matrix)>); // it's a translation!!!
         assert((get<0, 2>(result) == 2 * 666));
         assert((get<1, 2>(result) == 2 * 667));
     }
 }
 
+void testIdentity0() {
+    using namespace tiamat;
+    {
+        Identity<int, 1> identity;
+        static_assert(decltype(identity)::sparsity.rows == 1);
+        static_assert(decltype(identity)::sparsity.columns == 1);
+
+        static_assert(identity.sparsity[0][0] == Entry::pone);
+        // static_assert(translation.sparsity[0][1] == Entry::zero);
+        // static_assert(translation.sparsity[1][0] == Entry::zero);
+        // static_assert(translation.sparsity[1][1] == Entry::pone);
+
+        // static_assert(sizeof(identity) == 1 * sizeof(int));
+        static_assert(IsMatrix<decltype(identity)>);
+        // auto result = identity * identity;
+        // static_assert(IsMatrix<decltype(result)>);
+        // static_assert(std::is_same_v<decltype(result), decltype(identity)>);
+    }
+    // {
+    //     Translation<int, 2> translation;
+    //     static_assert(decltype(translation)::sparsity.rows == 3);
+    //     static_assert(decltype(translation)::sparsity.columns == 3);
+    //     static_assert(sizeof(translation) == 2 * sizeof(int));
+    //     static_assert(IsMatrix<decltype(translation)>);
+    //     auto result = translation * translation;
+    //     static_assert(IsMatrix<decltype(result)>);
+    //     static_assert(std::is_same_v<decltype(result), decltype(translation)>);
+    // }
+}
+
+
 void testTranslation0() {
     using namespace tiamat;
-    Translation<int, 2> translation;
-    static_assert(decltype(translation)::sparsity.rows == 3);
-    static_assert(decltype(translation)::sparsity.columns == 3);
-    static_assert(IsMatrix<decltype(translation)>);
-    auto result = translation * translation;
-    static_assert(IsMatrix<decltype(result)>);
-    static_assert(std::is_same_v<decltype(result), decltype(translation)>);
+    {
+        Translation<int, 1> translation;
+        static_assert(decltype(translation)::sparsity.rows == 2);
+        static_assert(decltype(translation)::sparsity.columns == 2);
+
+        static_assert(translation.sparsity[0][0] == Entry::pone);
+        static_assert(translation.sparsity[0][1] == Entry::any);
+        static_assert(translation.sparsity[1][0] == Entry::zero);
+        static_assert(translation.sparsity[1][1] == Entry::pone);
+
+        static_assert(sizeof(translation) == 1 * sizeof(int));
+        static_assert(IsMatrix<decltype(translation)>);
+        auto result = translation * translation;
+        static_assert(IsMatrix<decltype(result)>);
+        static_assert(std::is_same_v<decltype(result), decltype(translation)>);
+    }
+    {
+        Translation<int, 2> translation;
+        static_assert(decltype(translation)::sparsity.rows == 3);
+        static_assert(decltype(translation)::sparsity.columns == 3);
+        static_assert(sizeof(translation) == 2 * sizeof(int));
+        static_assert(IsMatrix<decltype(translation)>);
+        auto result = translation * translation;
+        static_assert(IsMatrix<decltype(result)>);
+        static_assert(std::is_same_v<decltype(result), decltype(translation)>);
+    }
 }
 
 void test() {

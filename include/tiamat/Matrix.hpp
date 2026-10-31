@@ -141,6 +141,10 @@ public:
     using Value                    = V;
     static constexpr auto sparsity = s;
 
+    Matrix()
+        : data {} {
+    }
+
 private:
     std::array<Value, count<sparsity, Entry::any>()> data;
 
