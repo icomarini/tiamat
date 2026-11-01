@@ -141,6 +141,23 @@ void testMatrix0() {
     }
 }
 
+void testVector0() {
+    // (n,n) * (n,1) = (n,1)
+    using namespace tiamat;
+    constexpr auto x = Translation<int, 3> { 1, 2, 3 } * Translation<int, 3> { 1, 2, 3 } * identity<int, 4> *
+                       ColumnVector<int, 4> { 0, 0, 0, 1 };
+    static_assert(decltype(x)::sparsity.rows == 4);
+    static_assert(decltype(x)::sparsity.columns == 1);
+    static_assert(IsVector<decltype(x)>);
+    static_assert(std::is_same_v<std::decay_t<decltype(x)>, ColumnVector<int, 4>>);
+    static_assert(valid<decltype(x)::sparsity, 0>());
+    static_assert(get<0>(x) == 2);
+    static_assert(get<1>(x) == 4);
+    static_assert(get<2>(x) == 6);
+    static_assert(get<3>(x) == 1);
+    // static_assert(get<0>(x) == 1);
+}
+
 void testIdentity0() {
     using namespace tiamat;
     {

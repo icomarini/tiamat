@@ -28,11 +28,6 @@ public:
     using Matrix<Value, rotationSparsity<dimension>()>::Matrix;
 };
 
-// template<IsArithmetic Value>
-// struct Dispatch<Value, translationSparsity<0>()> {
-//     using Type = Translation<Value, 0>;
-// };
-
 template<IsArithmetic Value>
 struct Dispatch<Value, rotationSparsity<1>()> {
     using Type = Rotation<Value, 1>;
