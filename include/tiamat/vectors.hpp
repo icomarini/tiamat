@@ -2,6 +2,8 @@
 
 #include "tiamat/Matrix.hpp"
 
+#include <cmath>
+
 namespace tiamat {
 
 template<Size size>
@@ -13,9 +15,10 @@ consteval auto columnVectorSparsity() {
     return sparsity;
 }
 
-template<typename Value, Size size>
-class ColumnVector : public Matrix<Value, columnVectorSparsity<size>()> {
+template<typename Value, Size s>
+class ColumnVector : public Matrix<Value, columnVectorSparsity<s>()> {
 public:
+    static constexpr auto size = s;
     using Matrix<Value, columnVectorSparsity<size>()>::Matrix;
 };
 
@@ -54,9 +57,10 @@ consteval auto rowVectorSparsity() {
     return sparsity;
 }
 
-template<typename Value, Size size>
-class RowVector : public Matrix<Value, rowVectorSparsity<size>()> {
+template<typename Value, Size s>
+class RowVector : public Matrix<Value, rowVectorSparsity<s>()> {
 public:
+    static constexpr auto size = s;
     using Matrix<Value, rowVectorSparsity<size>()>::Matrix;
 };
 
@@ -108,6 +112,20 @@ constexpr auto& get(Vec& v) {
     constexpr auto row    = Vec::sparsity.rows == 1 ? 0 : idx;
     constexpr auto column = Vec::sparsity.columns == 1 ? 0 : idx;
     return get<row, column>(v);
+}
+
+template<IsVector Vec>
+constexpr auto normalize(const Vec& vec) {
+    typename Vec::Value norm {};
+    template for (constexpr auto index : std::views::indices(vec.size)) {
+        norm += get<index>(vec) * get<index>(vec);
+    }
+    norm = std::sqrt(norm);
+    Vec result;
+    template for (constexpr auto index : std::views::indices(vec.size)) {
+        get<index>(result) = get<index>(vec) / norm;
+    }
+    return result;
 }
 
 }  // namespace tiamat

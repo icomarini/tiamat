@@ -3,6 +3,13 @@
 #include <iostream>
 #include <functional>
 #include <cassert>
+#include <chrono>
+
+#define GLM_FORCE_INTRINSICS
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 void testSparsity0() {
     using namespace tiamat;
@@ -238,7 +245,172 @@ void testTranslation0() {
 
 void testRotation0() {
     using namespace tiamat;
-    { const Rotation<int, 3> rotation; }
+    { const Rotation<float, 3> rotation; }
+}
+
+
+std::ostream& operator<<(std::ostream& stream, const glm::mat4& matrix) {
+    template for (constexpr auto row : std::views::indices(4)) {
+        template for (constexpr auto column : std::views::indices(4)) {
+            stream << " " << matrix[column][row];
+        }
+        stream << std::endl;
+    }
+    return stream;
+}
+
+namespace tiamat {
+template<IsMatrix Mat>
+std::ostream& operator<<(std::ostream& stream, const Mat& matrix) {
+    // constexpr auto sparsity = Mat::sparsity;
+    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+            stream << " " << get<row, column>(matrix);
+        }
+        stream << std::endl;
+    }
+    return stream;
+}
+}  // namespace tiamat
+
+// A typical struct for a 3D vertex
+struct glmVertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+};
+
+void transformVertices(const std::vector<glmVertex>& sourceVertices, std::vector<glmVertex>& outVertices,
+                       const glm::mat4& modelMatrix, const glm::mat3& normalMatrix) {
+    size_t vertexCount = sourceVertices.size();
+
+    // An intensive loop processing thousands of elements sequentially
+    for (size_t i = 0; i < vertexCount; ++i) {
+        // 1. Transform positions (requires expanding vec3 to vec4 for matrix math)
+        glm::vec4 localPos      = glm::vec4(sourceVertices[i].position, 1.0f);
+        glm::vec4 worldPos      = modelMatrix * localPos;
+        outVertices[i].position = glm::vec3(worldPos);
+
+        // 2. Transform normals and re-normalize to ensure standard length
+        outVertices[i].normal = glm::normalize(normalMatrix * sourceVertices[i].normal);
+    }
+}
+
+namespace tiamat {
+template<IsMatrix Mat>
+    requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
+bool equal(const glm::mat4 glm, const Mat& mat, const double tolerance = 1e-10) {
+    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+            if (std::abs(get<row, column>(mat) - glm[column][row]) > tolerance) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool equal(const glm::quat glm, const Quaternion<float>& quat, const double tolerance = 1e-10) {
+    return std::abs(quat.x - glm.x) < tolerance &&  //
+           std::abs(quat.y - glm.y) < tolerance &&  //
+           std::abs(quat.z - glm.z) < tolerance &&  //
+           std::abs(quat.w - glm.w) < tolerance;
+}
+}  // namespace tiamat
+
+auto glmMatrices() {
+    glm::vec3 translationVector(5.0f, -2.5f, 10.0f);
+    glm::mat4 T = glm::translate(glm::mat4(1.0f), translationVector);
+
+    glm::vec3 scaleVector(2.0f, 0.5f, 1.5f);
+    glm::mat4 S = glm::scale(glm::mat4(1.0f), scaleVector);
+
+
+    float     rotationAngle = glm::radians(45.0f);
+    glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f);
+    glm::quat rotationQuat = glm::angleAxis(rotationAngle, rotationAxis);
+    glm::mat4 R            = glm::toMat4(rotationQuat);
+
+    glm::mat4 modelMatrix  = T * R * S;
+    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(modelMatrix)));
+
+    return std::make_pair(modelMatrix, normalMatrix);
+}
+
+void glmWork(const int size) {
+    std::vector<glmVertex> sourceVertices(size);
+    for (auto& vertex : sourceVertices) {
+        vertex.position[0] = 1.1f;
+        vertex.position[0] = 1.2f;
+        vertex.position[0] = 1.3f;
+        vertex.normal[0]   = 1.4f;
+        vertex.normal[0]   = 1.5f;
+        vertex.normal[0]   = 1.6f;
+    }
+    std::vector<glmVertex> outVertices(size);
+    const auto [modelMatrix, normalMatrix] = glmMatrices();
+    transformVertices(sourceVertices, outVertices, modelMatrix, normalMatrix);
+}
+
+void testGlm() {
+    glm::mat4 glmIdentity = glm::mat4(1.0f);
+    assert(equal(glmIdentity, tiamat::identity<float, 4>));
+
+    const float                   trX            = 10.0f;
+    const float                   trY            = 0.0f;
+    const float                   trZ            = 5.0f;
+    glm::mat4                     glmTranslation = glm::translate(glmIdentity, glm::vec3(trX, trY, trZ));
+    tiamat::Translation<float, 3> tmtTranslation { trX, trY, trZ };
+    assert(equal(glmTranslation, tmtTranslation));
+
+    const float             scX      = 2.0f;
+    const float             scY      = 0.5f;
+    const float             scZ      = 1.5f;
+    glm::mat4               glmScale = glm::scale(glm::mat4(1.0f), glm::vec3(scX, scY, scZ));
+    tiamat::Scale<float, 3> tmtScale { scX, scY, scZ };
+    assert(equal(glmScale, tmtScale));
+    assert(equal(glmTranslation * glmScale, tmtTranslation * tmtScale));
+    assert(equal(glmScale * glmTranslation, tmtScale * tmtTranslation));
+
+    const float               rtA           = 45.0f;
+    const float               rtX           = 0.0f;
+    const float               rtY           = 1.0f;
+    const float               rtZ           = 0.0f;
+    glm::quat                 glmQuaternion = glm::angleAxis(glm::radians(rtA), glm::vec3(rtX, rtY, rtZ));
+    tiamat::Quaternion<float> tmtQuaternion {
+        tiamat::radians(rtA), tiamat::RowVector<float, 3> { rtX, rtY, rtZ }
+    };
+    assert(equal(glmQuaternion, tmtQuaternion));
+
+    const int iterations = 1000000;
+    {
+        std::vector<glm::mat4> v(iterations);
+        auto                   start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < iterations; i++) {
+            v[i] = glmTranslation * glmTranslation;
+        }
+        auto finish   = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+        std::cout << "glm took " << duration << " milliseconds" << std::endl;
+    }
+
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+        glmWork(100000);
+        auto finish   = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+        std::cout << "glm took " << duration << " milliseconds" << std::endl;
+    }
+
+    {
+        std::vector<tiamat::Translation<float, 3>> v(iterations);
+        auto                                       start = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < iterations; i++) {
+            v[i] = tmtTranslation * tmtTranslation;
+        }
+        auto finish   = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+        std::cout << "Tiamat took " << duration << " milliseconds" << std::endl;
+    }
 }
 
 void test() {
@@ -247,6 +419,7 @@ void test() {
     testMatrix0();
     testTranslation0();
     testRotation0();
+    testGlm();
 }
 
 
