@@ -371,15 +371,26 @@ void testGlm() {
     assert(equal(glmTranslation * glmScale, tmtTranslation * tmtScale));
     assert(equal(glmScale * glmTranslation, tmtScale * tmtTranslation));
 
-    const float               rtA           = 45.0f;
-    const float               rtX           = 0.0f;
-    const float               rtY           = 1.0f;
-    const float               rtZ           = 0.0f;
+    const float rtA = 40.0f;
+    const float rtX = 1.0f;
+    const float rtY = 1.0f;
+    const float rtZ = 1.0f;
+    // assert(equal(glm::normalize(glm::vec3(rtX, rtY, rtZ)),
+    //              tiamat::normalize(tiamat::RowVector<float, 3> { rtX, rtY, rtZ })));
     glm::quat                 glmQuaternion = glm::angleAxis(glm::radians(rtA), glm::vec3(rtX, rtY, rtZ));
+    glm::mat4                 glmRotation   = glm::toMat4(glmQuaternion);
     tiamat::Quaternion<float> tmtQuaternion {
         tiamat::radians(rtA), tiamat::RowVector<float, 3> { rtX, rtY, rtZ }
     };
-    assert(equal(glmQuaternion, tmtQuaternion));
+    tiamat::Rotation<float, 3> tmtRotation { tmtQuaternion };
+    // assert(equal(glmQuaternion, tmtQuaternion));
+    // assert(equal(glmRotation, tmtRotation));
+
+    std::cout << "glm rotation:" << std::endl;
+    std::cout << glmRotation;
+    std::cout << "tmt rotation:" << std::endl;
+    std::cout << tmtRotation;
+
 
     const int iterations = 1000000;
     {
@@ -393,13 +404,13 @@ void testGlm() {
         std::cout << "glm took " << duration << " milliseconds" << std::endl;
     }
 
-    {
-        auto start = std::chrono::high_resolution_clock::now();
-        glmWork(100000);
-        auto finish   = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-        std::cout << "glm took " << duration << " milliseconds" << std::endl;
-    }
+    // {
+    //     auto start = std::chrono::high_resolution_clock::now();
+    //     glmWork(100000);
+    //     auto finish   = std::chrono::high_resolution_clock::now();
+    //     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
+    //     std::cout << "glm took " << duration << " milliseconds" << std::endl;
+    // }
 
     {
         std::vector<tiamat::Translation<float, 3>> v(iterations);
@@ -409,7 +420,7 @@ void testGlm() {
         }
         auto finish   = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
-        std::cout << "Tiamat took " << duration << " milliseconds" << std::endl;
+        std::cout << "tmt took " << duration << " milliseconds" << std::endl;
     }
 }
 

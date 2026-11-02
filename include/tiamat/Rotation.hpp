@@ -28,28 +28,38 @@ class Rotation : public Matrix<Value, rotationSparsity<dimension>()> {
 public:
     using Matrix<Value, rotationSparsity<dimension>()>::Matrix;
 
+    Rotation(const Quaternion<Value>& quaternion)
+        requires(dimension == 3)
+    {
+        const auto      xx { quaternion.x * quaternion.x };
+        const auto      yy { quaternion.y * quaternion.y };
+        const auto      zz { quaternion.z * quaternion.z };
+        const auto      xz { quaternion.x * quaternion.z };
+        const auto      xy { quaternion.x * quaternion.y };
+        const auto      yz { quaternion.y * quaternion.z };
+        const auto      wx { quaternion.w * quaternion.x };
+        const auto      wy { quaternion.w * quaternion.y };
+        const auto      wz { quaternion.w * quaternion.z };
+        constexpr Value zero { 0 };
+        constexpr Value half { 0.5 };
+        constexpr Value two { 2 };
+        get<0, 0>(*this) = two * (half - yy - zz);
+        get<0, 1>(*this) = two * (zero + xy - wz);
+        get<0, 2>(*this) = two * (zero + xz + wy);
 
-    // Rotation(const Quaternion<Value>& quaternion)
-    //     requires(dimension == 3)
-    // {
-    //     const auto  xx { get<0>(rotation) * get<0>(rotation) };
-    //     const auto  yy { get<1>(rotation) * get<1>(rotation) };
-    //     const auto  zz { get<2>(rotation) * get<2>(rotation) };
-    //     const auto  xz { get<0>(rotation) * get<2>(rotation) };
-    //     const auto  xy { get<0>(rotation) * get<1>(rotation) };
-    //     const auto  yz { get<1>(rotation) * get<2>(rotation) };
-    //     const auto  wx { get<3>(rotation) * get<0>(rotation) };
-    //     const auto  wy { get<3>(rotation) * get<1>(rotation) };
-    //     const auto  wz { get<3>(rotation) * get<2>(rotation) };
-    //     constexpr T zero { 0 };
-    //     constexpr T half { 0.5 };
-    //     constexpr T two { 2 };
-    //     return two * Matrix<3, 3, T> {
-    //         half - yy - zz, zero + xy - wz, zero + xz + wy,  //
-    //         zero + xy + wz, half - xx - zz, zero + yz - wx,  //
-    //         zero + xz - wy, zero + yz + wx, half - xx - yy,  //
-    //     };
-    // }
+        get<1, 0>(*this) = two * (zero + xy + wz);
+        get<1, 1>(*this) = two * (half - xx - zz);
+        get<1, 2>(*this) = two * (zero + yz - wx);
+
+        get<2, 0>(*this) = two * (zero + xz - wy);
+        get<2, 1>(*this) = two * (zero + yz + wx);
+        get<2, 2>(*this) = two * (half - xx - yy);
+        // return two * Matrix<3, 3, T> {
+        //     half - yy - zz, zero + xy - wz, zero + xz + wy,  //
+        //     zero + xy + wz, half - xx - zz, zero + yz - wx,  //
+        //     zero + xz - wy, zero + yz + wx, half - xx - yy,  //
+        // };
+    }
 };
 
 // template<IsArithmetic Value>
