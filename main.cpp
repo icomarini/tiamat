@@ -391,8 +391,11 @@ void testGlm() {
     std::cout << "tmt rotation:" << std::endl;
     std::cout << tmtRotation;
 
+    const auto affine = tmtTranslation * tmtRotation * tmtScale;
+    static_assert(std::is_same_v<std::decay_t<decltype(affine)>, tiamat::Affine<float, 3>>);
 
-    const int iterations = 1000000;
+
+    const int iterations = 100000;
     {
         std::vector<glm::mat4> v(iterations);
         auto                   start = std::chrono::high_resolution_clock::now();

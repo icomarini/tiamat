@@ -6,3 +6,4 @@
 #include "tiamat/Translation.hpp"
 #include "tiamat/Rotation.hpp"
 #include "tiamat/Scale.hpp"
+#include "tiamat/Affine.hpp"
