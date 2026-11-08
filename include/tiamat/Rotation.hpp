@@ -3,7 +3,7 @@
 #include "tiamat/Matrix.hpp"
 #include "tiamat/Quaternion.hpp"
 
-namespace tiamat {
+namespace tmt {
 
 template<Size dimension>
     requires(dimension > 0)
@@ -76,4 +76,4 @@ template<IsArithmetic Value>
 struct Dispatch<Value, rotationSparsity<3>()> {
     using Type = Rotation<Value, 3>;
 };
-}  // namespace tiamat
+}  // namespace tmt

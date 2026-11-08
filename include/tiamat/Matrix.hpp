@@ -1,6 +1,7 @@
 #pragma once
 #include "tiamat/Sparsity.hpp"
-namespace tiamat {
+
+namespace tmt {
 template<typename T>
 static constexpr T zero = T { 0 };
 
@@ -130,4 +131,4 @@ constexpr auto operator*(const MatrixA& A, const MatrixB& B) {
 }
 // }  // namespace experimental
 
-}  // namespace tiamat
+}  // namespace tmt

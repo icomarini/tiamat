@@ -2,7 +2,7 @@
 
 #include "tiamat/Matrix.hpp"
 
-namespace tiamat {
+namespace tmt {
 
 template<Size dimension>
     requires(dimension > 0)
@@ -47,4 +47,4 @@ template<IsArithmetic Value>
 struct Dispatch<Value, translationSparsity<3>()> {
     using Type = Translation<Value, 3>;
 };
-}  // namespace tiamat
+}  // namespace tmt

@@ -2,7 +2,7 @@
 
 #include "tiamat/Matrix.hpp"
 
-namespace tiamat {
+namespace tmt {
 
 template<Size dimension>
     requires(dimension > 0)
@@ -45,4 +45,4 @@ template<IsArithmetic Value>
 struct Dispatch<Value, affineSparsity<3>()> {
     using Type = Affine<Value, 3>;
 };
-}  // namespace tiamat
+}  // namespace tmt

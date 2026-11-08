@@ -4,7 +4,7 @@
 #include <ranges>
 #include <utility>
 
-namespace tiamat {
+namespace tmt {
 enum class Entry {
     zero = 0,
     pone,
@@ -111,4 +111,4 @@ constexpr auto operator*(const IsSparsity auto A, const IsSparsity auto B)
     return C;
 }
 
-}  // namespace tiamat
+}  // namespace tmt

@@ -5,7 +5,7 @@
 #include <concepts>
 #include <numbers>
 
-namespace tiamat {
+namespace tmt {
 
 template<std::floating_point Value>
 constexpr auto radians(const Value degree) {
@@ -23,7 +23,9 @@ public:
         , w { w } {
     }
 
-    constexpr Quaternion(const std::floating_point auto radians, const IsVector auto& axis) {
+    template<IsVector Vec>
+        requires(Vec::size == 3)
+    constexpr Quaternion(const std::floating_point auto radians, const Vec& axis) {
         const auto n    = normalize(axis);
         const auto a    = radians * 0.5;
         const auto sina = std::sin(a);
@@ -38,4 +40,4 @@ public:
     Value z;
     Value w;
 };
-}  // namespace tiamat
+}  // namespace tmt

@@ -12,7 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 void testSparsity0() {
-    using namespace tiamat;
+    using namespace tmt;
 
     constexpr Sparsity sparsity {
         std::array { Entry::zero, Entry::pone, Entry::any },
@@ -54,7 +54,7 @@ void testSparsity0() {
 }
 
 void testSparsity1() {
-    using namespace tiamat;
+    using namespace tmt;
     {
         constexpr Sparsity sparsity {
             std::array { Entry::pone, Entry::zero },
@@ -114,7 +114,7 @@ void testSparsity1() {
 }
 
 void testMatrix0() {
-    using namespace tiamat;
+    using namespace tmt;
     {
         constexpr Sparsity sparsity {
             std::array { Entry::pone, Entry::zero, Entry::any  },
@@ -150,7 +150,7 @@ void testMatrix0() {
 
 void testVector0() {
     // (n,n) * (n,1) = (n,1)
-    using namespace tiamat;
+    using namespace tmt;
     constexpr auto x = Translation<int, 3> { 1, 2, 3 } * Translation<int, 3> { 1, 2, 3 } * identity<int, 4> *
                        ColumnVector<int, 4> { 0, 0, 0, 1 };
     static_assert(decltype(x)::sparsity.rows == 4);
@@ -166,7 +166,7 @@ void testVector0() {
 }
 
 void testIdentity0() {
-    using namespace tiamat;
+    using namespace tmt;
     {
         Identity<int, 1> identity;
         static_assert(decltype(identity)::sparsity.rows == 1);
@@ -197,7 +197,7 @@ void testIdentity0() {
 
 
 void testTranslation0() {
-    using namespace tiamat;
+    using namespace tmt;
     {
         Translation<int, 1> translation;
         static_assert(decltype(translation)::sparsity.rows == 2);
@@ -244,7 +244,7 @@ void testTranslation0() {
 }
 
 void testRotation0() {
-    using namespace tiamat;
+    using namespace tmt;
     { const Rotation<float, 3> rotation; }
 }
 
@@ -259,7 +259,7 @@ std::ostream& operator<<(std::ostream& stream, const glm::mat4& matrix) {
     return stream;
 }
 
-namespace tiamat {
+namespace tmt {
 template<IsMatrix Mat>
 std::ostream& operator<<(std::ostream& stream, const Mat& matrix) {
     // constexpr auto sparsity = Mat::sparsity;
@@ -271,7 +271,7 @@ std::ostream& operator<<(std::ostream& stream, const Mat& matrix) {
     }
     return stream;
 }
-}  // namespace tiamat
+}  // namespace tmt
 
 // A typical struct for a 3D vertex
 struct glmVertex {
@@ -295,7 +295,7 @@ void transformVertices(const std::vector<glmVertex>& sourceVertices, std::vector
     }
 }
 
-namespace tiamat {
+namespace tmt {
 template<IsMatrix Mat>
     requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
 bool equal(const glm::mat4 glm, const Mat& mat, const double tolerance = 1e-10) {
@@ -315,7 +315,7 @@ bool equal(const glm::quat glm, const Quaternion<float>& quat, const double tole
            std::abs(quat.z - glm.z) < tolerance &&  //
            std::abs(quat.w - glm.w) < tolerance;
 }
-}  // namespace tiamat
+}  // namespace tmt
 
 auto glmMatrices() {
     glm::vec3 translationVector(5.0f, -2.5f, 10.0f);
@@ -351,49 +351,66 @@ void glmWork(const int size) {
     transformVertices(sourceVertices, outVertices, modelMatrix, normalMatrix);
 }
 
+void tmtWork(const int size) {
+    std::vector<glmVertex> sourceVertices(size);
+    for (auto& vertex : sourceVertices) {
+        vertex.position[0] = 1.1f;
+        vertex.position[0] = 1.2f;
+        vertex.position[0] = 1.3f;
+        vertex.normal[0]   = 1.4f;
+        vertex.normal[0]   = 1.5f;
+        vertex.normal[0]   = 1.6f;
+    }
+    std::vector<glmVertex> outVertices(size);
+    const auto [modelMatrix, normalMatrix] = glmMatrices();
+    transformVertices(sourceVertices, outVertices, modelMatrix, normalMatrix);
+}
+
 void testGlm() {
     glm::mat4 glmIdentity = glm::mat4(1.0f);
-    assert(equal(glmIdentity, tiamat::identity<float, 4>));
+    assert(equal(glmIdentity, tmt::identity<float, 4>));
 
-    const float                   trX            = 10.0f;
-    const float                   trY            = 0.0f;
-    const float                   trZ            = 5.0f;
-    glm::mat4                     glmTranslation = glm::translate(glmIdentity, glm::vec3(trX, trY, trZ));
-    tiamat::Translation<float, 3> tmtTranslation { trX, trY, trZ };
+    const float                trX            = 10.0f;
+    const float                trY            = 0.0f;
+    const float                trZ            = 5.0f;
+    glm::mat4                  glmTranslation = glm::translate(glmIdentity, glm::vec3(trX, trY, trZ));
+    tmt::Translation<float, 3> tmtTranslation { trX, trY, trZ };
     assert(equal(glmTranslation, tmtTranslation));
 
-    const float             scX      = 2.0f;
-    const float             scY      = 0.5f;
-    const float             scZ      = 1.5f;
-    glm::mat4               glmScale = glm::scale(glm::mat4(1.0f), glm::vec3(scX, scY, scZ));
-    tiamat::Scale<float, 3> tmtScale { scX, scY, scZ };
+    const float          scX      = 2.0f;
+    const float          scY      = 0.5f;
+    const float          scZ      = 1.5f;
+    glm::mat4            glmScale = glm::scale(glm::mat4(1.0f), glm::vec3(scX, scY, scZ));
+    tmt::Scale<float, 3> tmtScale { scX, scY, scZ };
     assert(equal(glmScale, tmtScale));
     assert(equal(glmTranslation * glmScale, tmtTranslation * tmtScale));
     assert(equal(glmScale * glmTranslation, tmtScale * tmtTranslation));
 
     const float rtA = 40.0f;
-    const float rtX = 1.0f;
+    const float rtX = 0.0f;
     const float rtY = 1.0f;
-    const float rtZ = 1.0f;
+    const float rtZ = 0.0f;
     // assert(equal(glm::normalize(glm::vec3(rtX, rtY, rtZ)),
-    //              tiamat::normalize(tiamat::RowVector<float, 3> { rtX, rtY, rtZ })));
-    glm::quat                 glmQuaternion = glm::angleAxis(glm::radians(rtA), glm::vec3(rtX, rtY, rtZ));
-    glm::mat4                 glmRotation   = glm::toMat4(glmQuaternion);
-    tiamat::Quaternion<float> tmtQuaternion {
-        tiamat::radians(rtA), tiamat::RowVector<float, 3> { rtX, rtY, rtZ }
+    //              tmt::normalize(tmt::RowVector<float, 3> { rtX, rtY, rtZ })));
+    glm::quat              glmQuaternion = glm::angleAxis(glm::radians(rtA), glm::vec3(rtX, rtY, rtZ));
+    glm::mat4              glmRotation   = glm::toMat4(glmQuaternion);
+    tmt::Quaternion<float> tmtQuaternion {
+        tmt::radians(rtA), tmt::RowVector<float, 3> { rtX, rtY, rtZ }
     };
-    tiamat::Rotation<float, 3> tmtRotation { tmtQuaternion };
-    // assert(equal(glmQuaternion, tmtQuaternion));
-    // assert(equal(glmRotation, tmtRotation));
+    tmt::Rotation<float, 3> tmtRotation { tmtQuaternion };
+    assert(equal(glmQuaternion, tmtQuaternion));
+    assert(equal(glmRotation, tmtRotation));
 
     std::cout << "glm rotation:" << std::endl;
     std::cout << glmRotation;
     std::cout << "tmt rotation:" << std::endl;
     std::cout << tmtRotation;
 
-    const auto affine = tmtTranslation * tmtRotation * tmtScale;
-    static_assert(std::is_same_v<std::decay_t<decltype(affine)>, tiamat::Affine<float, 3>>);
+    const auto tmtTransformation = tmtTranslation * tmtRotation * tmtScale;
+    static_assert(std::is_same_v<std::decay_t<decltype(tmtTransformation)>, tmt::Affine<float, 3>>);
 
+    const auto glmTransofrmation = glmTranslation * glmRotation * glmScale;
+    assert(equal(glmTransofrmation, tmtTransformation));
 
     const int iterations = 100000;
     {
@@ -416,8 +433,8 @@ void testGlm() {
     // }
 
     {
-        std::vector<tiamat::Translation<float, 3>> v(iterations);
-        auto                                       start = std::chrono::high_resolution_clock::now();
+        std::vector<tmt::Translation<float, 3>> v(iterations);
+        auto                                    start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; i++) {
             v[i] = tmtTranslation * tmtTranslation;
         }

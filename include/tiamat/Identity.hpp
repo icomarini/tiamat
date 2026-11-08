@@ -1,7 +1,7 @@
 #pragma once
 #include "tiamat/Matrix.hpp"
 
-namespace tiamat {
+namespace tmt {
 
 template<Size size>
 consteval auto identitySparsity() {
@@ -37,4 +37,4 @@ struct Dispatch<Value, identitySparsity<3>()> {
 
 template<IsArithmetic Value, Size size>
 constexpr Identity<Value, size> identity;
-}  // namespace tiamat
+}  // namespace tmt

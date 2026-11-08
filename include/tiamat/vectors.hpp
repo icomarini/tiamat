@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-namespace tiamat {
+namespace tmt {
 
 template<Size size>
 consteval auto columnVectorSparsity() {
@@ -128,4 +128,4 @@ constexpr auto normalize(const Vec& vec) {
     return result;
 }
 
-}  // namespace tiamat
+}  // namespace tmt
