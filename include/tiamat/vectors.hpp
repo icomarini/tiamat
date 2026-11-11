@@ -115,17 +115,25 @@ constexpr auto& get(Vec& v) {
 }
 
 template<IsVector Vec>
-constexpr auto normalize(const Vec& vec) {
-    typename Vec::Value norm {};
+constexpr auto norm(const Vec& vec) {
+    typename Vec::Value norm { 0 };
     template for (constexpr auto index : std::views::indices(vec.size)) {
         norm += get<index>(vec) * get<index>(vec);
     }
-    norm = std::sqrt(norm);
-    Vec result;
-    template for (constexpr auto index : std::views::indices(vec.size)) {
-        get<index>(result) = get<index>(vec) / norm;
-    }
-    return result;
+    return std::sqrt(norm);
+}
+
+template<IsVector Vec>
+constexpr auto normalize(const Vec& vec) {
+    const auto n = norm(vec);
+    if (n > typename Vec::Value { 0 }) {
+        Vec result;
+        template for (constexpr auto index : std::views::indices(vec.size)) {
+            get<index>(result) = get<index>(vec) / n;
+        }
+        return result;
+    };
+    return Vec {};
 }
 
 }  // namespace tmt

@@ -129,6 +129,93 @@ constexpr auto operator*(const MatrixA& A, const MatrixB& B) {
     }
     return C;
 }
-// }  // namespace experimental
+
+template<IsMatrix Mat>
+constexpr auto transpose(const Mat& A) {
+    using Transposed = typename Dispatch<typename Mat::Value, transpose(Mat::sparsity)>::Type;
+    Transposed trA {};
+    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+            if constexpr (Mat::sparsity[row][column] == Entry::any) {
+                get<column, row>(trA) = get<row, column>(A);
+            }
+        }
+    }
+    return trA;
+}
+
+template<IsMatrix Mat>
+    requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
+Matrix<typename Mat::Value, inverse(Mat::sparsity)> inverse(const Mat& m) {
+    Matrix<typename Mat::Value, inverse(Mat::sparsity)> inv {};
+    get<0, 0>(inv) = get<1, 1>(m) * get<2, 2>(m) * get<3, 3>(m) - get<1, 1>(m) * get<2, 3>(m) * get<3, 2>(m) -
+                     get<2, 1>(m) * get<1, 2>(m) * get<3, 3>(m) + get<2, 1>(m) * get<1, 3>(m) * get<3, 2>(m) +
+                     get<3, 1>(m) * get<1, 2>(m) * get<2, 3>(m) - get<3, 1>(m) * get<1, 3>(m) * get<2, 2>(m);
+
+    get<1, 0>(inv) = -get<1, 0>(m) * get<2, 2>(m) * get<3, 3>(m) + get<1, 0>(m) * get<2, 3>(m) * get<3, 2>(m) +
+                     get<2, 0>(m) * get<1, 2>(m) * get<3, 3>(m) - get<2, 0>(m) * get<1, 3>(m) * get<3, 2>(m) -
+                     get<3, 0>(m) * get<1, 2>(m) * get<2, 3>(m) + get<3, 0>(m) * get<1, 3>(m) * get<2, 2>(m);
+
+    get<2, 0>(inv) = get<1, 0>(m) * get<2, 1>(m) * get<3, 3>(m) - get<1, 0>(m) * get<2, 3>(m) * get<3, 1>(m) -
+                     get<2, 0>(m) * get<1, 1>(m) * get<3, 3>(m) + get<2, 0>(m) * get<1, 3>(m) * get<3, 1>(m) +
+                     get<3, 0>(m) * get<1, 1>(m) * get<2, 3>(m) - get<3, 0>(m) * get<1, 3>(m) * get<2, 1>(m);
+
+    get<3, 0>(inv) = -get<1, 0>(m) * get<2, 1>(m) * get<3, 2>(m) + get<1, 0>(m) * get<2, 2>(m) * get<3, 1>(m) +
+                     get<2, 0>(m) * get<1, 1>(m) * get<3, 2>(m) - get<2, 0>(m) * get<1, 2>(m) * get<3, 1>(m) -
+                     get<3, 0>(m) * get<1, 1>(m) * get<2, 2>(m) + get<3, 0>(m) * get<1, 2>(m) * get<2, 1>(m);
+
+    get<0, 1>(inv) = -get<0, 1>(m) * get<2, 2>(m) * get<3, 3>(m) + get<0, 1>(m) * get<2, 3>(m) * get<3, 2>(m) +
+                     get<2, 1>(m) * get<0, 2>(m) * get<3, 3>(m) - get<2, 1>(m) * get<0, 3>(m) * get<3, 2>(m) -
+                     get<3, 1>(m) * get<0, 2>(m) * get<2, 3>(m) + get<3, 1>(m) * get<0, 3>(m) * get<2, 2>(m);
+
+    get<1, 1>(inv) = get<0, 0>(m) * get<2, 2>(m) * get<3, 3>(m) - get<0, 0>(m) * get<2, 3>(m) * get<3, 2>(m) -
+                     get<2, 0>(m) * get<0, 2>(m) * get<3, 3>(m) + get<2, 0>(m) * get<0, 3>(m) * get<3, 2>(m) +
+                     get<3, 0>(m) * get<0, 2>(m) * get<2, 3>(m) - get<3, 0>(m) * get<0, 3>(m) * get<2, 2>(m);
+
+    get<2, 1>(inv) = -get<0, 0>(m) * get<2, 1>(m) * get<3, 3>(m) + get<0, 0>(m) * get<2, 3>(m) * get<3, 1>(m) +
+                     get<2, 0>(m) * get<0, 1>(m) * get<3, 3>(m) - get<2, 0>(m) * get<0, 3>(m) * get<3, 1>(m) -
+                     get<3, 0>(m) * get<0, 1>(m) * get<2, 3>(m) + get<3, 0>(m) * get<0, 3>(m) * get<2, 1>(m);
+
+    get<3, 1>(inv) = get<0, 0>(m) * get<2, 1>(m) * get<3, 2>(m) - get<0, 0>(m) * get<2, 2>(m) * get<3, 1>(m) -
+                     get<2, 0>(m) * get<0, 1>(m) * get<3, 2>(m) + get<2, 0>(m) * get<0, 2>(m) * get<3, 1>(m) +
+                     get<3, 0>(m) * get<0, 1>(m) * get<2, 2>(m) - get<3, 0>(m) * get<0, 2>(m) * get<2, 1>(m);
+
+    get<0, 2>(inv) = get<0, 1>(m) * get<1, 2>(m) * get<3, 3>(m) - get<0, 1>(m) * get<1, 3>(m) * get<3, 2>(m) -
+                     get<1, 1>(m) * get<0, 2>(m) * get<3, 3>(m) + get<1, 1>(m) * get<0, 3>(m) * get<3, 2>(m) +
+                     get<3, 1>(m) * get<0, 2>(m) * get<1, 3>(m) - get<3, 1>(m) * get<0, 3>(m) * get<1, 2>(m);
+
+    get<1, 2>(inv) = -get<0, 0>(m) * get<1, 2>(m) * get<3, 3>(m) + get<0, 0>(m) * get<1, 3>(m) * get<3, 2>(m) +
+                     get<1, 0>(m) * get<0, 2>(m) * get<3, 3>(m) - get<1, 0>(m) * get<0, 3>(m) * get<3, 2>(m) -
+                     get<3, 0>(m) * get<0, 2>(m) * get<1, 3>(m) + get<3, 0>(m) * get<0, 3>(m) * get<1, 2>(m);
+
+    get<2, 2>(inv) = get<0, 0>(m) * get<1, 1>(m) * get<3, 3>(m) - get<0, 0>(m) * get<1, 3>(m) * get<3, 1>(m) -
+                     get<1, 0>(m) * get<0, 1>(m) * get<3, 3>(m) + get<1, 0>(m) * get<0, 3>(m) * get<3, 1>(m) +
+                     get<3, 0>(m) * get<0, 1>(m) * get<1, 3>(m) - get<3, 0>(m) * get<0, 3>(m) * get<1, 1>(m);
+
+    get<3, 2>(inv) = -get<0, 0>(m) * get<1, 1>(m) * get<3, 2>(m) + get<0, 0>(m) * get<1, 2>(m) * get<3, 1>(m) +
+                     get<1, 0>(m) * get<0, 1>(m) * get<3, 2>(m) - get<1, 0>(m) * get<0, 2>(m) * get<3, 1>(m) -
+                     get<3, 0>(m) * get<0, 1>(m) * get<1, 2>(m) + get<3, 0>(m) * get<0, 2>(m) * get<1, 1>(m);
+
+    get<0, 3>(inv) = -get<0, 1>(m) * get<1, 2>(m) * get<2, 3>(m) + get<0, 1>(m) * get<1, 3>(m) * get<2, 2>(m) +
+                     get<1, 1>(m) * get<0, 2>(m) * get<2, 3>(m) - get<1, 1>(m) * get<0, 3>(m) * get<2, 2>(m) -
+                     get<2, 1>(m) * get<0, 2>(m) * get<1, 3>(m) + get<2, 1>(m) * get<0, 3>(m) * get<1, 2>(m);
+
+    get<1, 3>(inv) = get<0, 0>(m) * get<1, 2>(m) * get<2, 3>(m) - get<0, 0>(m) * get<1, 3>(m) * get<2, 2>(m) -
+                     get<1, 0>(m) * get<0, 2>(m) * get<2, 3>(m) + get<1, 0>(m) * get<0, 3>(m) * get<2, 2>(m) +
+                     get<2, 0>(m) * get<0, 2>(m) * get<1, 3>(m) - get<2, 0>(m) * get<0, 3>(m) * get<1, 2>(m);
+
+    get<2, 3>(inv) = -get<0, 0>(m) * get<1, 1>(m) * get<2, 3>(m) + get<0, 0>(m) * get<1, 3>(m) * get<2, 1>(m) +
+                     get<1, 0>(m) * get<0, 1>(m) * get<2, 3>(m) - get<1, 0>(m) * get<0, 3>(m) * get<2, 1>(m) -
+                     get<2, 0>(m) * get<0, 1>(m) * get<1, 3>(m) + get<2, 0>(m) * get<0, 3>(m) * get<1, 1>(m);
+
+    get<3, 3>(inv) = get<0, 0>(m) * get<1, 1>(m) * get<2, 2>(m) - get<0, 0>(m) * get<1, 2>(m) * get<2, 1>(m) -
+                     get<1, 0>(m) * get<0, 1>(m) * get<2, 2>(m) + get<1, 0>(m) * get<0, 2>(m) * get<2, 1>(m) +
+                     get<2, 0>(m) * get<0, 1>(m) * get<1, 2>(m) - get<2, 0>(m) * get<0, 2>(m) * get<1, 1>(m);
+
+    const auto det = get<0, 0>(m) * get<0, 0>(inv) + get<0, 1>(m) * get<1, 0>(inv) + get<0, 2>(m) * get<2, 0>(inv) +
+                     get<0, 3>(m) * get<3, 0>(inv);
+
+    return det != zero<typename Mat::Value> ? inv / det : throw std::runtime_error("Singular matrix");
+}
 
 }  // namespace tmt

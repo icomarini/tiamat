@@ -26,12 +26,12 @@ public:
     template<IsVector Vec>
         requires(Vec::size == 3)
     constexpr Quaternion(const std::floating_point auto radians, const Vec& axis) {
-        const auto n    = normalize(axis);
+        // const auto n    = normalize(axis);
         const auto a    = radians * 0.5;
         const auto sina = std::sin(a);
-        x               = get<0>(n) * sina;
-        y               = get<1>(n) * sina;
-        z               = get<2>(n) * sina;
+        x               = get<0>(axis) * sina;
+        y               = get<1>(axis) * sina;
+        z               = get<2>(axis) * sina;
         w               = std::cos(a);
     }
 

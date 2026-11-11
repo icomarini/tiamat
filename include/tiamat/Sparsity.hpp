@@ -102,13 +102,33 @@ constexpr auto operator*(const IsSparsity auto A, const IsSparsity auto B)
 {
     Sparsity<A.rows, B.columns> C {};
     template for (constexpr auto row : std::views::indices(A.rows)) {
-        template for (constexpr auto col : std::views::indices(B.columns)) {
-            template for (constexpr auto mid : std::views::indices(A.columns)) {
-                C[row][col] = C[row][col] + A[row][mid] * B[mid][col];
+        template for (constexpr auto column : std::views::indices(B.columns)) {
+            template for (constexpr auto middle : std::views::indices(A.columns)) {
+                C[row][column] = C[row][column] + A[row][middle] * B[middle][column];
             }
         }
     }
     return C;
+}
+
+constexpr auto transpose(const IsSparsity auto A) {
+    Sparsity<A.columns, A.rows> B {};
+    template for (constexpr auto row : std::views::indices(A.rows)) {
+        template for (constexpr auto column : std::views::indices(A.columns)) {
+            B[column][row] = A[row][column];
+        }
+    }
+    return B;
+}
+
+constexpr auto inverse(const IsSparsity auto A) {
+    Sparsity<A.rows, A.columns> B {};
+    template for (constexpr auto row : std::views::indices(A.rows)) {
+        template for (constexpr auto column : std::views::indices(A.columns)) {
+            B[row][column] = Entry::any;
+        }
+    }
+    return B;
 }
 
 }  // namespace tmt

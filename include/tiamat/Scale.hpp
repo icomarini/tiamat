@@ -24,6 +24,11 @@ template<typename Value, Size dimension>
 class Scale : public Matrix<Value, scaleSparsity<dimension>()> {
 public:
     using Matrix<Value, scaleSparsity<dimension>()>::Matrix;
+    Scale() {
+        template for (constexpr auto i : std::views::indices(dimension)) {
+            get<i, i>(*this) = one<Value>;
+        }
+    }
 };
 
 // template<IsArithmetic Value>

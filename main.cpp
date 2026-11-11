@@ -10,6 +10,65 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/norm.hpp>
+
+
+namespace tmt {
+constexpr bool equal(const std::floating_point auto a, const std::floating_point auto& b,
+                     const double tolerance = 1e-7) {
+    const auto diff = a - b;
+    return std::abs(diff) < tolerance;
+}
+
+template<IsMatrix Mat>
+    requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
+constexpr bool equal(const glm::mat4 glm, const Mat& tmt, const double tolerance = 1e-7) {
+    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+            if (!equal(get<row, column>(tmt), glm[column][row], tolerance)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+template<IsMatrix MatA, IsMatrix MatB>
+    requires(MatA::sparsity.rows == MatB::sparsity.rows && MatA::sparsity.columns == MatB::sparsity.columns)
+constexpr bool equal(const MatA& A, const MatB& B, const double tolerance = 1e-7) {
+    template for (constexpr auto row : std::views::indices(MatA::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(MatB::sparsity.columns)) {
+            if (!equal(get<row, column>(A), get<row, column>(B), tolerance)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+template<IsVector Vec>
+    requires(Vec::size == 3)
+constexpr bool equal(const glm::vec3 glm, const Vec& tmt, const double tolerance = 1e-7) {
+    template for (constexpr auto index : std::views::indices(Vec::size)) {
+        if (!equal(get<index>(tmt), glm[index], tolerance)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+constexpr bool equal(const glm::quat glm, const Quaternion<float>& tmt, const double tolerance = 1e-7) {
+    return equal(glm.x, tmt.x, tolerance) &&  //
+           equal(glm.y, tmt.y, tolerance) &&  //
+           equal(glm.z, tmt.z, tolerance) &&  //
+           equal(glm.w, tmt.w, tolerance);
+}
+}  // namespace tmt
+
+float random(float low, float high) {
+    return low + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (high - low)));
+}
 
 void testSparsity0() {
     using namespace tmt;
@@ -243,6 +302,14 @@ void testTranslation0() {
     }
 }
 
+// void testScale0() {
+//     using namespace tmt;
+//     {
+//         Scale<int, 3> scale;
+//         assert(equal(scale, identity<int, 4>));
+//     }
+// }
+
 void testRotation0() {
     using namespace tmt;
     { const Rotation<float, 3> rotation; }
@@ -295,28 +362,6 @@ void transformVertices(const std::vector<glmVertex>& sourceVertices, std::vector
     }
 }
 
-namespace tmt {
-template<IsMatrix Mat>
-    requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
-bool equal(const glm::mat4 glm, const Mat& mat, const double tolerance = 1e-10) {
-    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
-        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
-            if (std::abs(get<row, column>(mat) - glm[column][row]) > tolerance) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-bool equal(const glm::quat glm, const Quaternion<float>& quat, const double tolerance = 1e-10) {
-    return std::abs(quat.x - glm.x) < tolerance &&  //
-           std::abs(quat.y - glm.y) < tolerance &&  //
-           std::abs(quat.z - glm.z) < tolerance &&  //
-           std::abs(quat.w - glm.w) < tolerance;
-}
-}  // namespace tmt
-
 auto glmMatrices() {
     glm::vec3 translationVector(5.0f, -2.5f, 10.0f);
     glm::mat4 T = glm::translate(glm::mat4(1.0f), translationVector);
@@ -367,8 +412,13 @@ void tmtWork(const int size) {
 }
 
 void testGlm() {
+    const int iterations = 100000;
+
     glm::mat4 glmIdentity = glm::mat4(1.0f);
     assert(equal(glmIdentity, tmt::identity<float, 4>));
+    assert(equal(glm::transpose(glmIdentity), tmt::identity<float, 4>));
+    assert(equal(glmIdentity, tmt::transpose(tmt::identity<float, 4>)));
+    assert(equal(glm::transpose(glmIdentity), tmt::transpose(tmt::identity<float, 4>)));
 
     const float                trX            = 10.0f;
     const float                trY            = 0.0f;
@@ -376,6 +426,27 @@ void testGlm() {
     glm::mat4                  glmTranslation = glm::translate(glmIdentity, glm::vec3(trX, trY, trZ));
     tmt::Translation<float, 3> tmtTranslation { trX, trY, trZ };
     assert(equal(glmTranslation, tmtTranslation));
+    for (int i = 0; i < iterations; i++) {
+        const float                x              = random(-711, 711);
+        const float                y              = random(-711, 711);
+        const float                z              = random(-711, 711);
+        glm::mat4                  glmTranslation = glm::translate(glmIdentity, glm::vec3(x, y, z));
+        tmt::Translation<float, 3> tmtTranslation { x, y, z };
+        assert(equal(glmTranslation, tmtTranslation));
+        {
+            auto                  glm           = glm::vec3(x, y, z);
+            auto                  tmt           = tmt::RowVector<float, 3> { x, y, z };
+            auto                  glmNormalized = glm::normalize(glm);
+            auto                  tmtNormalized = tmt::normalize(tmt);
+            [[maybe_unused]] auto diffX         = glmNormalized[0] - get<0>(tmtNormalized);
+            [[maybe_unused]] auto diffY         = glmNormalized[1] - get<1>(tmtNormalized);
+            [[maybe_unused]] auto diffZ         = glmNormalized[2] - get<2>(tmtNormalized);
+            assert(equal(glmNormalized, tmtNormalized));
+            auto glmLength = glm::length(glm);
+            auto tmtLength = tmt::norm(tmt);
+            assert(tmt::equal(glmLength, tmtLength));
+        }
+    }
 
     const float          scX      = 2.0f;
     const float          scY      = 0.5f;
@@ -383,6 +454,9 @@ void testGlm() {
     glm::mat4            glmScale = glm::scale(glm::mat4(1.0f), glm::vec3(scX, scY, scZ));
     tmt::Scale<float, 3> tmtScale { scX, scY, scZ };
     assert(equal(glmScale, tmtScale));
+    assert(equal(glm::transpose(glmScale), tmtScale));
+    assert(equal(glmScale, tmt::transpose(tmtScale)));
+    assert(equal(glm::transpose(glmScale), tmt::transpose(tmtScale)));
     assert(equal(glmTranslation * glmScale, tmtTranslation * tmtScale));
     assert(equal(glmScale * glmTranslation, tmtScale * tmtTranslation));
 
@@ -390,8 +464,8 @@ void testGlm() {
     const float rtX = 0.0f;
     const float rtY = 1.0f;
     const float rtZ = 0.0f;
-    // assert(equal(glm::normalize(glm::vec3(rtX, rtY, rtZ)),
-    //              tmt::normalize(tmt::RowVector<float, 3> { rtX, rtY, rtZ })));
+    assert(equal(glm::normalize(glm::vec3(rtX, rtY, rtZ)), tmt::normalize(tmt::RowVector<float, 3> { rtX, rtY, rtZ })));
+
     glm::quat              glmQuaternion = glm::angleAxis(glm::radians(rtA), glm::vec3(rtX, rtY, rtZ));
     glm::mat4              glmRotation   = glm::toMat4(glmQuaternion);
     tmt::Quaternion<float> tmtQuaternion {
@@ -400,6 +474,24 @@ void testGlm() {
     tmt::Rotation<float, 3> tmtRotation { tmtQuaternion };
     assert(equal(glmQuaternion, tmtQuaternion));
     assert(equal(glmRotation, tmtRotation));
+    for (int i = 0; i < iterations; i++) {
+        const float            a             = random(-711, 711);
+        const float            x             = random(-711, 711);
+        const float            y             = random(-711, 711);
+        const float            z             = random(-711, 711);
+        glm::quat              glmQuaternion = glm::angleAxis(glm::radians(a), glm::normalize(glm::vec3(x, y, z)));
+        tmt::Quaternion<float> tmtQuaternion { tmt::radians(a), tmt::normalize(tmt::RowVector<float, 3> { x, y, z }) };
+        assert(equal(glmQuaternion, tmtQuaternion, 1e-6));
+
+        glm::mat4               glmRotation = glm::toMat4(glmQuaternion);
+        tmt::Rotation<float, 3> tmtRotation { tmtQuaternion };
+        std::cout << "glm rotation:" << std::endl;
+        std::cout << glmRotation;
+        std::cout << "tmt rotation:" << std::endl;
+        std::cout << tmtRotation;
+
+        assert(equal(glmRotation, tmtRotation, 1e-6));
+    }
 
     std::cout << "glm rotation:" << std::endl;
     std::cout << glmRotation;
@@ -412,7 +504,7 @@ void testGlm() {
     const auto glmTransofrmation = glmTranslation * glmRotation * glmScale;
     assert(equal(glmTransofrmation, tmtTransformation));
 
-    const int iterations = 100000;
+
     {
         std::vector<glm::mat4> v(iterations);
         auto                   start = std::chrono::high_resolution_clock::now();
@@ -442,6 +534,10 @@ void testGlm() {
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
         std::cout << "tmt took " << duration << " milliseconds" << std::endl;
     }
+
+    // for (int i = 0; i < iterations; i++) {
+    //     std::cout << random(10, 20) << std::endl;
+    // }
 }
 
 void test() {
