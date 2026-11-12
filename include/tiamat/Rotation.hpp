@@ -27,7 +27,18 @@ template<std::floating_point Value, Size dimension>
 class Rotation : public Matrix<Value, rotationSparsity<dimension>()> {
 public:
     using Matrix<Value, rotationSparsity<dimension>()>::Matrix;
+    constexpr Rotation() {
+        template for (constexpr auto row : std::views::indices(dimension)) {
+            template for (constexpr auto column : std::views::indices(dimension)) {
+                if constexpr (row == column) {
+                    get<row, column>(*this) = one<Value>;
 
+                } else {
+                    get<row, column>(*this) = zero<Value>;
+                }
+            }
+        }
+    }
     Rotation(const Quaternion<Value>& quaternion)
         requires(dimension == 3)
     {

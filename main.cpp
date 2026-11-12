@@ -20,6 +20,10 @@ constexpr bool equal(const std::floating_point auto a, const std::floating_point
     return std::abs(diff) < tolerance;
 }
 
+constexpr bool equal(const std::integral auto a, const std::integral auto& b, const double) {
+    return a == b;
+}
+
 template<IsMatrix Mat>
     requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
 constexpr bool equal(const glm::mat4 glm, const Mat& tmt, const double tolerance = 1e-7) {
@@ -302,17 +306,20 @@ void testTranslation0() {
     }
 }
 
-// void testScale0() {
-//     using namespace tmt;
-//     {
-//         Scale<int, 3> scale;
-//         assert(equal(scale, identity<int, 4>));
-//     }
-// }
+void testScale0() {
+    using namespace tmt;
+    {
+        constexpr Scale<int, 3> scale;
+        static_assert(equal(scale, identity<int, 4>));
+    }
+}
 
 void testRotation0() {
     using namespace tmt;
-    { const Rotation<float, 3> rotation; }
+    {
+        constexpr Rotation<float, 3> rotation;
+        static_assert(equal(rotation, identity<float, 4>));
+    }
 }
 
 
@@ -412,7 +419,7 @@ void tmtWork(const int size) {
 }
 
 void testGlm() {
-    const int iterations = 100000;
+    const int iterations = 100000000;
 
     glm::mat4 glmIdentity = glm::mat4(1.0f);
     assert(equal(glmIdentity, tmt::identity<float, 4>));
@@ -485,10 +492,10 @@ void testGlm() {
 
         glm::mat4               glmRotation = glm::toMat4(glmQuaternion);
         tmt::Rotation<float, 3> tmtRotation { tmtQuaternion };
-        std::cout << "glm rotation:" << std::endl;
-        std::cout << glmRotation;
-        std::cout << "tmt rotation:" << std::endl;
-        std::cout << tmtRotation;
+        // std::cout << "glm rotation:" << std::endl;
+        // std::cout << glmRotation;
+        // std::cout << "tmt rotation:" << std::endl;
+        // std::cout << tmtRotation;
 
         assert(equal(glmRotation, tmtRotation, 1e-6));
     }
@@ -509,7 +516,7 @@ void testGlm() {
         std::vector<glm::mat4> v(iterations);
         auto                   start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; i++) {
-            v[i] = glmTranslation * glmTranslation;
+            v[i] = glmRotation * glmScale * glmTranslation;
         }
         auto finish   = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
@@ -525,10 +532,10 @@ void testGlm() {
     // }
 
     {
-        std::vector<tmt::Translation<float, 3>> v(iterations);
-        auto                                    start = std::chrono::high_resolution_clock::now();
+        std::vector<tmt::Affine<float, 3>> v(iterations);
+        auto                               start = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; i++) {
-            v[i] = tmtTranslation * tmtTranslation;
+            v[i] = tmtRotation * tmtScale * tmtTranslation;
         }
         auto finish   = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(finish - start);
