@@ -32,7 +32,6 @@ public:
             template for (constexpr auto column : std::views::indices(dimension)) {
                 if constexpr (row == column) {
                     get<row, column>(*this) = one<Value>;
-
                 } else {
                     get<row, column>(*this) = zero<Value>;
                 }
@@ -65,11 +64,6 @@ public:
         get<2, 0>(*this) = two * (zero + xz - wy);
         get<2, 1>(*this) = two * (zero + yz + wx);
         get<2, 2>(*this) = two * (half - xx - yy);
-        // return two * Matrix<3, 3, T> {
-        //     half - yy - zz, zero + xy - wz, zero + xz + wy,  //
-        //     zero + xy + wz, half - xx - zz, zero + yz - wx,  //
-        //     zero + xz - wy, zero + yz + wx, half - xx - yy,  //
-        // };
     }
 };
 

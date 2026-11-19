@@ -28,6 +28,15 @@ public:
     using Matrix<Value, translationSparsity<dimension>()>::Matrix;
 };
 
+template<typename Value, Size dimension>
+constexpr Translation<Value, dimension> inverse(const Translation<Value, dimension>& M) {
+    Translation<Value, dimension> inv;
+    template for (constexpr auto row : std::views::indices(dimension)) {
+        get<row, dimension>(inv) = -get<row, dimension>(M);
+    }
+    return inv;
+}
+
 // template<IsArithmetic Value>
 // struct Dispatch<Value, translationSparsity<0>()> {
 //     using Type = Translation<Value, 0>;

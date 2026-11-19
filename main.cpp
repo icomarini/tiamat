@@ -303,6 +303,9 @@ void testTranslation0() {
         // auto result = translation * translation;
         static_assert(IsMatrix<decltype(result)>);
         static_assert(std::is_same_v<decltype(result), decltype(translation)>);
+
+        static_assert(equal(translation * inverse(translation), identity<int, 4>));
+        static_assert(equal(inverse(translation) * translation, identity<int, 4>));
     }
 }
 

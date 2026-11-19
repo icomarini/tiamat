@@ -31,6 +31,7 @@ public:
     }
 };
 
+
 // template<IsArithmetic Value>
 // struct Dispatch<Value, translationSparsity<0>()> {
 //     using Type = Translation<Value, 0>;

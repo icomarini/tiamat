@@ -47,13 +47,13 @@ public:
     using Value                    = V;
     static constexpr auto sparsity = s;
 
-    constexpr Matrix()
+    explicit constexpr Matrix()
         : data {} {
     }
 
     template<typename... Values>
         requires((std::same_as<Value, Values> && ...) && sizeof...(Values) == count<sparsity, Entry::any>())
-    constexpr Matrix(Values... values)
+    explicit constexpr Matrix(Values... values)
         : data { values... } {
     }
 
