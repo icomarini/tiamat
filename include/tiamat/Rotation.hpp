@@ -6,8 +6,8 @@
 namespace tmt {
 
 template<Size dimension>
-    requires(dimension > 0)
-consteval auto rotationSparsity() {
+    requires(dimension == 2 || dimension == 3)
+consteval auto generateRotationSparsity() {
     Sparsity<dimension + 1, dimension + 1> sparsity;
     template for (constexpr auto row : std::views::indices(dimension + 1)) {
         template for (constexpr auto column : std::views::indices(dimension + 1)) {
@@ -23,10 +23,15 @@ consteval auto rotationSparsity() {
     return sparsity;
 }
 
+template<Size dimension>
+    requires(dimension == 2 || dimension == 3)
+constexpr auto rotationSparsity = generateRotationSparsity<dimension>();
+
 template<std::floating_point Value, Size dimension>
-class Rotation : public Matrix<Value, rotationSparsity<dimension>()> {
+    requires(dimension == 2 || dimension == 3)
+class Rotation : public Matrix<Value, rotationSparsity<dimension>> {
 public:
-    using Matrix<Value, rotationSparsity<dimension>()>::Matrix;
+    using Matrix<Value, rotationSparsity<dimension>>::Matrix;
     constexpr Rotation() {
         template for (constexpr auto row : std::views::indices(dimension)) {
             template for (constexpr auto column : std::views::indices(dimension)) {
@@ -68,18 +73,9 @@ public:
     }
 };
 
-// template<IsArithmetic Value>
-// struct Dispatch<Value, rotationSparsity<1>()> {
-//     using Type = Rotation<Value, 1>;
-// };
-
-template<IsArithmetic Value>
-struct Dispatch<Value, rotationSparsity<2>()> {
-    using Type = Rotation<Value, 2>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, rotationSparsity<3>()> {
-    using Type = Rotation<Value, 3>;
+template<std::floating_point Value, IsSparsity auto sparsity>
+    requires(sparsity == rotationSparsity<sparsity.rows - 1>)
+struct Dispatch<Value, sparsity> {
+    using Type = Rotation<Value, sparsity.rows - 1>;
 };
 }  // namespace tmt

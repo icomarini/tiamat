@@ -6,7 +6,7 @@ namespace tmt {
 
 template<Size dimension>
     requires(dimension > 0)
-consteval auto affineSparsity() {
+consteval auto generateAffineSparsity() {
     Sparsity<dimension + 1, dimension + 1> sparsity;
     template for (constexpr auto row : std::views::indices(dimension + 1)) {
         template for (constexpr auto column : std::views::indices(dimension + 1)) {
@@ -20,30 +20,20 @@ consteval auto affineSparsity() {
     return sparsity;
 }
 
+template<Size dimension>
+    requires(dimension > 0)
+constexpr auto affineSparsity = generateAffineSparsity<dimension>();
+
 template<typename Value, Size dimension>
-class Affine : public Matrix<Value, affineSparsity<dimension>()> {
+class Affine : public Matrix<Value, affineSparsity<dimension>> {
 public:
-    using Matrix<Value, affineSparsity<dimension>()>::Matrix;
-    using Matrix<Value, affineSparsity<dimension>()>::operator=;
+    using Matrix<Value, affineSparsity<dimension>>::Matrix;
+    using Matrix<Value, affineSparsity<dimension>>::operator=;
 };
 
-// template<IsArithmetic Value>
-// struct Dispatch<Value, translationSparsity<0>()> {
-//     using Type = Translation<Value, 0>;
-// };
-
-template<IsArithmetic Value>
-struct Dispatch<Value, affineSparsity<1>()> {
-    using Type = Affine<Value, 1>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, affineSparsity<2>()> {
-    using Type = Affine<Value, 2>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, affineSparsity<3>()> {
-    using Type = Affine<Value, 3>;
+template<IsArithmetic Value, IsSparsity auto sparsity>
+    requires(sparsity == affineSparsity<sparsity.rows - 1>)
+struct Dispatch<Value, sparsity> {
+    using Type = Affine<Value, sparsity.rows - 1>;
 };
 }  // namespace tmt

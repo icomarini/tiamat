@@ -25,10 +25,10 @@ constexpr bool equal(const std::integral auto a, const std::integral auto& b, co
 }
 
 template<IsMatrix Mat>
-    requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
+    requires(Mat::rows == 4 && Mat::columns == 4)
 constexpr bool equal(const glm::mat4 glm, const Mat& tmt, const double tolerance = 1e-7) {
-    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
-        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+    template for (constexpr auto row : std::views::indices(Mat::rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::columns)) {
             if (!equal(get<row, column>(tmt), glm[column][row], tolerance)) {
                 return false;
             }
@@ -38,10 +38,10 @@ constexpr bool equal(const glm::mat4 glm, const Mat& tmt, const double tolerance
 }
 
 template<IsMatrix MatA, IsMatrix MatB>
-    requires(MatA::sparsity.rows == MatB::sparsity.rows && MatA::sparsity.columns == MatB::sparsity.columns)
+    requires(MatA::rows == MatB::rows && MatA::columns == MatB::columns)
 constexpr bool equal(const MatA& A, const MatB& B, const double tolerance = 1e-7) {
-    template for (constexpr auto row : std::views::indices(MatA::sparsity.rows)) {
-        template for (constexpr auto column : std::views::indices(MatB::sparsity.columns)) {
+    template for (constexpr auto row : std::views::indices(MatA::rows)) {
+        template for (constexpr auto column : std::views::indices(MatB::columns)) {
             if (!equal(get<row, column>(A), get<row, column>(B), tolerance)) {
                 return false;
             }
@@ -216,8 +216,8 @@ void testVector0() {
     using namespace tmt;
     constexpr auto x = Translation<int, 3> { 1, 2, 3 } * Translation<int, 3> { 1, 2, 3 } * identity<int, 4> *
                        ColumnVector<int, 4> { 0, 0, 0, 1 };
-    static_assert(decltype(x)::sparsity.rows == 4);
-    static_assert(decltype(x)::sparsity.columns == 1);
+    static_assert(decltype(x)::rows == 4);
+    static_assert(decltype(x)::columns == 1);
     static_assert(IsVector<decltype(x)>);
     static_assert(std::is_same_v<std::decay_t<decltype(x)>, ColumnVector<int, 4>>);
     static_assert(valid<decltype(x)::sparsity, 0>());
@@ -232,8 +232,8 @@ void testIdentity0() {
     using namespace tmt;
     {
         Identity<int, 1> identity;
-        static_assert(decltype(identity)::sparsity.rows == 1);
-        static_assert(decltype(identity)::sparsity.columns == 1);
+        static_assert(decltype(identity)::rows == 1);
+        static_assert(decltype(identity)::columns == 1);
 
         static_assert(identity.sparsity[0][0] == Entry::pone);
         // static_assert(translation.sparsity[0][1] == Entry::zero);
@@ -248,8 +248,8 @@ void testIdentity0() {
     }
     // {
     //     Translation<int, 2> translation;
-    //     static_assert(decltype(translation)::sparsity.rows == 3);
-    //     static_assert(decltype(translation)::sparsity.columns == 3);
+    //     static_assert(decltype(translation)::rows == 3);
+    //     static_assert(decltype(translation)::columns == 3);
     //     static_assert(sizeof(translation) == 2 * sizeof(int));
     //     static_assert(IsMatrix<decltype(translation)>);
     //     auto result = translation * translation;
@@ -263,8 +263,8 @@ void testTranslation0() {
     using namespace tmt;
     {
         Translation<int, 1> translation;
-        static_assert(decltype(translation)::sparsity.rows == 2);
-        static_assert(decltype(translation)::sparsity.columns == 2);
+        static_assert(decltype(translation)::rows == 2);
+        static_assert(decltype(translation)::columns == 2);
 
         static_assert(translation.sparsity[0][0] == Entry::pone);
         static_assert(translation.sparsity[0][1] == Entry::any);
@@ -280,8 +280,8 @@ void testTranslation0() {
     {
         Translation<int, 2> translation;
         static_assert(equal(Translation<int, 2> {}, identity<int, 3>));
-        static_assert(decltype(translation)::sparsity.rows == 3);
-        static_assert(decltype(translation)::sparsity.columns == 3);
+        static_assert(decltype(translation)::rows == 3);
+        static_assert(decltype(translation)::columns == 3);
         static_assert(sizeof(translation) == 2 * sizeof(int));
         static_assert(IsMatrix<decltype(translation)>);
         auto result = translation * translation;
@@ -296,8 +296,8 @@ void testTranslation0() {
         static_assert(get<1, 3>(result) == 33);
         static_assert(get<2, 3>(result) == 36);
 
-        static_assert(decltype(translation)::sparsity.rows == 4);
-        static_assert(decltype(translation)::sparsity.columns == 4);
+        static_assert(decltype(translation)::rows == 4);
+        static_assert(decltype(translation)::columns == 4);
 
         static_assert(sizeof(translation) == 3 * sizeof(int));
         static_assert(IsMatrix<decltype(translation)>);
@@ -344,8 +344,8 @@ namespace tmt {
 template<IsMatrix Mat>
 std::ostream& operator<<(std::ostream& stream, const Mat& matrix) {
     // constexpr auto sparsity = Mat::sparsity;
-    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
-        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+    template for (constexpr auto row : std::views::indices(Mat::rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::columns)) {
             stream << " " << get<row, column>(matrix);
         }
         stream << std::endl;

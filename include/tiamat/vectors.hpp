@@ -90,7 +90,7 @@ struct Dispatch<Value, rowVectorSparsity<4>()> {
 };
 
 template<typename T>
-concept IsVector = IsMatrix<T> && (T::sparsity.rows == 1 || T::sparsity.columns == 1);
+concept IsVector = IsMatrix<T> && (T::rows == 1 || T::columns == 1);
 
 template<IsSparsity auto sparsity, const Index index>
     requires(sparsity.rows == 1 || sparsity.columns == 1)
@@ -101,16 +101,16 @@ consteval bool valid() {
 template<Index idx, IsVector Vec>
     requires(valid<Vec::sparsity, idx>())
 constexpr auto& get(const Vec& V) {
-    constexpr auto row    = Vec::sparsity.rows == 1 ? 0 : idx;
-    constexpr auto column = Vec::sparsity.columns == 1 ? 0 : idx;
+    constexpr auto row    = Vec::rows == 1 ? 0 : idx;
+    constexpr auto column = Vec::columns == 1 ? 0 : idx;
     return get<row, column>(V);
 }
 
 template<Index idx, IsVector Vec>
     requires(valid<Vec::sparsity, idx>() /*&& Vec::sparsity[row][column] == Entry::any*/)
 constexpr auto& get(Vec& v) {
-    constexpr auto row    = Vec::sparsity.rows == 1 ? 0 : idx;
-    constexpr auto column = Vec::sparsity.columns == 1 ? 0 : idx;
+    constexpr auto row    = Vec::rows == 1 ? 0 : idx;
+    constexpr auto column = Vec::columns == 1 ? 0 : idx;
     return get<row, column>(v);
 }
 
