@@ -26,14 +26,14 @@ template<Size dimension>
     requires(dimension > 0)
 constexpr auto translationSparsity = generateTranslationSparsity<dimension>();
 
-template<typename Value, Size dimension>
+template<IsArithmetic Value, Size dimension>
     requires(dimension > 0)
 class Translation : public Matrix<Value, translationSparsity<dimension>> {
 public:
     using Matrix<Value, translationSparsity<dimension>>::Matrix;
 };
 
-template<typename Value, Size dimension>
+template<IsArithmetic Value, Size dimension>
     requires(dimension > 0)
 constexpr Translation<Value, dimension> inverse(const Translation<Value, dimension>& M) {
     Translation<Value, dimension> inv;

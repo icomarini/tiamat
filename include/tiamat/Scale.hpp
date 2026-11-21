@@ -36,6 +36,16 @@ public:
     }
 };
 
+template<std::floating_point Value, Size dimension>
+    requires(dimension > 0)
+constexpr Scale<Value, dimension> inverse(const Scale<Value, dimension>& M) {
+    Scale<Value, dimension> inv;
+    template for (constexpr auto row : std::views::indices(dimension)) {
+        get<row, row>(inv) = one<Value> / get<row, row>(M);
+    }
+    return inv;
+}
+
 template<IsArithmetic Value, IsSparsity auto sparsity>
     requires(sparsity == scaleSparsity<sparsity.rows - 1>)
 struct Dispatch<Value, sparsity> {

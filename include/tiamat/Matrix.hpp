@@ -9,6 +9,9 @@ template<typename T>
 static constexpr T one = T { 1 };
 
 template<typename T>
+static constexpr T minusOne = -T { 1 };
+
+template<typename T>
 concept IsArithmetic = std::integral<T> || std::floating_point<T>;
 
 // Non Matrix trait
@@ -107,7 +110,7 @@ constexpr auto& get(const Mat& M) {
     } else if constexpr (entry == Entry::pone) {
         return one<Value>;
     } else if constexpr (entry == Entry::mone) {
-        return -one<Value>;
+        return minusOne<Value>;
     } else {
         return M.data[index<Mat::sparsity, row, column>()];
     }
@@ -132,11 +135,12 @@ constexpr auto operator*(const MatrixA& A, const MatrixB& B) {
     MatrixC C;
     template for (constexpr auto row : std::views::indices(MatrixA::rows)) {
         template for (constexpr auto column : std::views::indices(MatrixB::columns)) {
-            template for (constexpr auto middle : std::views::indices(MatrixA::columns)) {
-                if constexpr (MatrixC::sparsity[row][column] == Entry::any) {
+            auto& valueC = get<row, column>(C);
+            if constexpr (MatrixC::sparsity[row][column] == Entry::any) {
+                valueC = zero<CommonValue>;
+                template for (constexpr auto middle : std::views::indices(MatrixA::columns)) {
                     constexpr auto entryA = MatrixA::sparsity[row][middle];
                     constexpr auto entryB = MatrixB::sparsity[middle][column];
-                    auto&          valueC = get<row, column>(C);
                     if constexpr (entryA == Entry::any && entryB != Entry::any) {
                         const auto&    valueA = get<row, middle>(A);
                         constexpr auto valueB = get<middle, column>(B);
@@ -148,6 +152,10 @@ constexpr auto operator*(const MatrixA& A, const MatrixB& B) {
                     } else if constexpr (entryA == Entry::any && entryB == Entry::any) {
                         const auto& valueA = get<row, middle>(A);
                         const auto& valueB = get<middle, column>(B);
+                        valueC += valueA * valueB;
+                    } else if constexpr (entryA != Entry::zero && entryB != Entry::zero) {
+                        constexpr auto valueA = get<row, middle>(A);
+                        constexpr auto valueB = get<middle, column>(B);
                         valueC += valueA * valueB;
                     }
                 }

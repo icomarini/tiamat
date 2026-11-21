@@ -32,6 +32,7 @@ template<std::floating_point Value, Size dimension>
 class Rotation : public Matrix<Value, rotationSparsity<dimension>> {
 public:
     using Matrix<Value, rotationSparsity<dimension>>::Matrix;
+
     constexpr Rotation() {
         template for (constexpr auto row : std::views::indices(dimension)) {
             template for (constexpr auto column : std::views::indices(dimension)) {
@@ -44,7 +45,20 @@ public:
         }
     }
 
-    Rotation(const Quaternion<Value>& quaternion)
+    template<std::floating_point V>
+    Rotation(const V& angle)
+        requires(dimension == 2)
+    {
+        const auto sina  = std::sin(angle);
+        const auto cosa  = std::cos(angle);
+        get<0, 0>(*this) = cosa;
+        get<0, 1>(*this) = -sina;
+        get<1, 0>(*this) = sina;
+        get<1, 1>(*this) = cosa;
+    }
+
+    template<std::floating_point V>
+    Rotation(const Quaternion<V>& quaternion)
         requires(dimension == 3)
     {
         const auto      xx { quaternion.x * quaternion.x };

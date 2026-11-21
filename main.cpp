@@ -74,6 +74,49 @@ float random(float low, float high) {
     return low + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (high - low)));
 }
 
+void test_multiply_constant_entries() {
+    using namespace tmt;
+    using enum Entry;
+
+    // Case 1: pone * pone + pone * any -> Entry::any
+    // [ 1  1 ] * [ 1  0 ] = [ 1 + 5  0 ] = [ 6  0 ]
+    // [ 0  0 ]   [ 5  0 ]   [   0    0 ]   [ 0  0 ]
+    constexpr Sparsity sparsityA {
+        std::array { pone, pone },
+        std::array { zero, zero },
+    };
+    constexpr Sparsity sparsityB {
+        std::array { pone, zero },
+        std::array { any,  zero },
+    };
+
+    Matrix<float, sparsityA> A {};
+    Matrix<float, sparsityB> B {};
+    get<1, 0>(B) = 5.0f;
+
+    const auto C = A * B;
+    assert((get<0, 0>(C) == 6.0f));  // Buggy operator* produces 5.0f
+
+    // Case 2: pone * pone + mone * pone -> Entry::any (if same sign: mone * mone)
+    // [ 1  -1 ] * [  1  0 ] = [ 2  0 ]
+    // [ 0   0 ]   [ -1  0 ]   [ 0  0 ]
+    constexpr Sparsity sparsityD {
+        std::array { pone, mone },
+        std::array { zero, zero },
+    };
+    constexpr Sparsity sparsityE {
+        std::array { pone, zero },
+        std::array { mone, zero },
+    };
+
+    Matrix<float, sparsityD> D {};
+    Matrix<float, sparsityE> E {};
+
+    const auto F = D * E;
+    assert((get<0, 0>(F) == 2.0f));  // Buggy operator* produces 0.0f
+}
+
+
 void testSparsity0() {
     using namespace tmt;
 
@@ -456,13 +499,10 @@ void testGlm() {
         tmt::Translation<float, 3> tmtTranslation { x, y, z };
         assert(equal(glmTranslation, tmtTranslation));
         {
-            auto                  glm           = glm::vec3(x, y, z);
-            auto                  tmt           = tmt::RowVector<float, 3> { x, y, z };
-            auto                  glmNormalized = glm::normalize(glm);
-            auto                  tmtNormalized = tmt::normalize(tmt);
-            [[maybe_unused]] auto diffX         = glmNormalized[0] - get<0>(tmtNormalized);
-            [[maybe_unused]] auto diffY         = glmNormalized[1] - get<1>(tmtNormalized);
-            [[maybe_unused]] auto diffZ         = glmNormalized[2] - get<2>(tmtNormalized);
+            auto glm           = glm::vec3(x, y, z);
+            auto tmt           = tmt::RowVector<float, 3> { x, y, z };
+            auto glmNormalized = glm::normalize(glm);
+            auto tmtNormalized = tmt::normalize(tmt);
             assert(equal(glmNormalized, tmtNormalized));
             auto glmLength = glm::length(glm);
             auto tmtLength = tmt::norm(tmt);
@@ -475,6 +515,9 @@ void testGlm() {
     const float          scZ      = 1.5f;
     glm::mat4            glmScale = glm::scale(glm::mat4(1.0f), glm::vec3(scX, scY, scZ));
     tmt::Scale<float, 3> tmtScale { scX, scY, scZ };
+    assert(equal(tmtScale * tmt::inverse(tmtScale), tmt::identity<float, 4>));
+    assert(equal(tmt::inverse(tmtScale) * tmtScale, tmt::identity<float, 4>));
+
     {
         static_assert(tmt::copyable<tmt::Affine<float, 3>::sparsity, tmt::Scale<float, 3>::sparsity>());
         tmt::Affine<float, 3> tmtAffine { tmtScale };
@@ -505,6 +548,8 @@ void testGlm() {
         static_assert(tmt::copyable<tmt::Affine<float, 3>::sparsity, tmt::Rotation<float, 3>::sparsity>());
         tmt::Affine<float, 3> tmtAffine { tmtRotation };
     }
+    assert(equal(tmtRotation * tmt::inverse(tmtRotation), tmt::identity<float, 4>));
+    assert(equal(tmt::inverse(tmtRotation) * tmtRotation, tmt::identity<float, 4>));
     tmtAffine = tmtRotation;
     assert(equal(tmtAffine, tmtRotation));
     assert(equal(glmQuaternion, tmtQuaternion));
@@ -538,6 +583,15 @@ void testGlm() {
 
     const auto glmTransofrmation = glmTranslation * glmRotation * glmScale;
     assert(equal(glmTransofrmation, tmtTransformation));
+
+    std::cout << "transformation:\n" << tmtTransformation << std::endl;
+    std::cout << "inverse(transformation):\n" << tmt::inverse(tmtTransformation) << std::endl;
+    std::cout << "transformation * inverse(transformation):\n"
+              << tmtTransformation * tmt::inverse(tmtTransformation) << std::endl;
+
+
+    assert(equal(tmtTransformation * tmt::inverse(tmtTransformation), tmt::identity<float, 4>, 1e-6));
+    // assert(equal(tmt::inverse(tmtTransformation) * glmTransofrmation, tmt::identity<float, 4>));
 
 
     {
@@ -582,6 +636,7 @@ void test() {
     testTranslation0();
     testRotation0();
     testGlm();
+    test_multiply_constant_entries();
 }
 
 

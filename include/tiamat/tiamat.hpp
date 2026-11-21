@@ -7,3 +7,4 @@
 #include "tiamat/Rotation.hpp"
 #include "tiamat/Scale.hpp"
 #include "tiamat/Affine.hpp"
+#include "tiamat/Perspective.hpp"
