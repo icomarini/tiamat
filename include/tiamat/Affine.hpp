@@ -24,6 +24,7 @@ template<typename Value, Size dimension>
 class Affine : public Matrix<Value, affineSparsity<dimension>()> {
 public:
     using Matrix<Value, affineSparsity<dimension>()>::Matrix;
+    using Matrix<Value, affineSparsity<dimension>()>::operator=;
 };
 
 // template<IsArithmetic Value>

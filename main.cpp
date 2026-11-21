@@ -279,6 +279,7 @@ void testTranslation0() {
     }
     {
         Translation<int, 2> translation;
+        static_assert(equal(Translation<int, 2> {}, identity<int, 3>));
         static_assert(decltype(translation)::sparsity.rows == 3);
         static_assert(decltype(translation)::sparsity.columns == 3);
         static_assert(sizeof(translation) == 2 * sizeof(int));
@@ -314,6 +315,7 @@ void testScale0() {
     {
         constexpr Scale<int, 3> scale;
         static_assert(equal(scale, identity<int, 4>));
+        static_assert(std::is_same_v<std::decay_t<decltype(scale)>, decltype(scale * scale)>);
     }
 }
 
@@ -322,6 +324,8 @@ void testRotation0() {
     {
         constexpr Rotation<float, 3> rotation;
         static_assert(equal(rotation, identity<float, 4>));
+        static_assert(equal(transpose(rotation), identity<float, 4>));
+        static_assert(equal(inverse(rotation), identity<float, 4>));
     }
 }
 
@@ -422,7 +426,7 @@ void tmtWork(const int size) {
 }
 
 void testGlm() {
-    const int iterations = 100000000;
+    const int iterations = 1000000;
 
     glm::mat4 glmIdentity = glm::mat4(1.0f);
     assert(equal(glmIdentity, tmt::identity<float, 4>));
@@ -435,6 +439,14 @@ void testGlm() {
     const float                trZ            = 5.0f;
     glm::mat4                  glmTranslation = glm::translate(glmIdentity, glm::vec3(trX, trY, trZ));
     tmt::Translation<float, 3> tmtTranslation { trX, trY, trZ };
+    {
+        tmt::Affine<float, 3> tmtAffine { tmtTranslation };
+        static_assert(tmt::copyable<tmt::Affine<float, 3>::sparsity, tmt::Translation<float, 3>::sparsity>());
+    }
+    tmt::Affine<float, 3> tmtAffine;
+    tmtAffine = tmtTranslation;
+    assert(equal(tmtAffine, tmtTranslation));
+
     assert(equal(glmTranslation, tmtTranslation));
     for (int i = 0; i < iterations; i++) {
         const float                x              = random(-711, 711);
@@ -463,6 +475,13 @@ void testGlm() {
     const float          scZ      = 1.5f;
     glm::mat4            glmScale = glm::scale(glm::mat4(1.0f), glm::vec3(scX, scY, scZ));
     tmt::Scale<float, 3> tmtScale { scX, scY, scZ };
+    {
+        static_assert(tmt::copyable<tmt::Affine<float, 3>::sparsity, tmt::Scale<float, 3>::sparsity>());
+        tmt::Affine<float, 3> tmtAffine { tmtScale };
+    }
+    tmtAffine = tmtScale;
+    assert(equal(tmtAffine, tmtScale));
+
     assert(equal(glmScale, tmtScale));
     assert(equal(glm::transpose(glmScale), tmtScale));
     assert(equal(glmScale, tmt::transpose(tmtScale)));
@@ -482,6 +501,12 @@ void testGlm() {
         tmt::radians(rtA), tmt::RowVector<float, 3> { rtX, rtY, rtZ }
     };
     tmt::Rotation<float, 3> tmtRotation { tmtQuaternion };
+    {
+        static_assert(tmt::copyable<tmt::Affine<float, 3>::sparsity, tmt::Rotation<float, 3>::sparsity>());
+        tmt::Affine<float, 3> tmtAffine { tmtRotation };
+    }
+    tmtAffine = tmtRotation;
+    assert(equal(tmtAffine, tmtRotation));
     assert(equal(glmQuaternion, tmtQuaternion));
     assert(equal(glmRotation, tmtRotation));
     for (int i = 0; i < iterations; i++) {

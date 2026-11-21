@@ -97,6 +97,32 @@ consteval Index index() {
     }
 }
 
+template<IsSparsity auto A, IsSparsity auto B>
+    requires(A.rows == B.rows && A.columns == B.columns)
+consteval bool copyable() {
+    template for (constexpr auto row : std::views::indices(A.rows)) {
+        template for (constexpr auto column : std::views::indices(A.columns)) {
+            if constexpr (A[row][column] != Entry::any && A[row][column] != B[row][column]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+template<IsSparsity A, IsSparsity B>
+    requires(A::rows == B::rows && A::columns == B::columns)
+consteval bool operator==(const A& a, const B& b) {
+    template for (constexpr auto row : std::views::indices(A::rows)) {
+        template for (constexpr auto column : std::views::indices(A::columns)) {
+            if (a[row][column] != b[row][column]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 constexpr auto operator*(const IsSparsity auto A, const IsSparsity auto B)
     requires(A.columns == B.rows)
 {
@@ -109,6 +135,16 @@ constexpr auto operator*(const IsSparsity auto A, const IsSparsity auto B)
         }
     }
     return C;
+}
+
+constexpr auto operator*(const IsSparsity auto A, const Entry a) {
+    Sparsity<A.rows, A.columns> B {};
+    template for (constexpr auto row : std::views::indices(A.rows)) {
+        template for (constexpr auto column : std::views::indices(A.columns)) {
+            B[row][column] = A[row][column] * a;
+        }
+    }
+    return B;
 }
 
 constexpr auto transpose(const IsSparsity auto A) {

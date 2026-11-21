@@ -38,6 +38,7 @@ public:
             }
         }
     }
+
     Rotation(const Quaternion<Value>& quaternion)
         requires(dimension == 3)
     {

@@ -46,6 +46,8 @@ class Matrix {
 public:
     using Value                    = V;
     static constexpr auto sparsity = s;
+    // static constexpr auto rows = sparsity.rows;
+    // static constexpr auto columns = sparsity.columns;
 
     explicit constexpr Matrix()
         : data {} {
@@ -55,6 +57,33 @@ public:
         requires((std::same_as<Value, Values> && ...) && sizeof...(Values) == count<sparsity, Entry::any>())
     explicit constexpr Matrix(Values... values)
         : data { values... } {
+    }
+
+    template<IsMatrix Mat>
+        requires(copyable<sparsity, Mat::sparsity>())
+    explicit constexpr Matrix(const Mat& M) {
+        template for (constexpr auto row : std::views::indices(sparsity.rows)) {
+            template for (constexpr auto column : std::views::indices(sparsity.columns)) {
+                if constexpr (sparsity[row][column] == Entry::any) {
+                    get<row, column>(*this) = get<row, column>(M);
+                }
+            }
+        }
+    }
+
+    // Matrix<Value, sparsity> operator=(const Matrix<Value, sparsity>&) = delete;
+
+    template<IsMatrix Mat>
+        requires(copyable<sparsity, Mat::sparsity>())
+    auto& operator=(const Mat& M) {
+        template for (constexpr auto row : std::views::indices(sparsity.rows)) {
+            template for (constexpr auto column : std::views::indices(sparsity.columns)) {
+                if constexpr (sparsity[row][column] == Entry::any) {
+                    get<row, column>(*this) = get<row, column>(M);
+                }
+            }
+        }
+        return *this;
     }
 
 private:
@@ -130,6 +159,30 @@ constexpr auto operator*(const MatrixA& A, const MatrixB& B) {
     return C;
 }
 
+template<IsMatrix Mat, IsArithmetic Scalar>
+constexpr auto operator*(const Mat& A, const Scalar& a) {
+    using CommonValue  = std::common_type_t<typename Mat::Value, Scalar>;
+    using MatrixResult = typename Dispatch<CommonValue, Mat::sparsity * Entry::any>::Type;
+    MatrixResult result;
+    template for (constexpr auto row : std::views::indices(Mat::sparsity.rows)) {
+        template for (constexpr auto column : std::views::indices(Mat::sparsity.columns)) {
+            if constexpr (Mat::sparsity[row][column] == Entry::any) {
+                get<row, column>(result) = get<row, column>(A) * a;
+            } else if constexpr (Mat::sparsity[row][column] == Entry::pone) {
+                get<row, column>(result) = a;
+            } else if constexpr (Mat::sparsity[row][column] == Entry::mone) {
+                get<row, column>(result) = -a;
+            }
+        }
+    }
+    return result;
+}
+
+template<IsMatrix Mat, std::floating_point Scalar>
+constexpr auto operator/(const Mat& A, const Scalar& a) {
+    return A * (one<Scalar> / a);
+}
+
 template<IsMatrix Mat>
 constexpr auto transpose(const Mat& A) {
     using Transposed = typename Dispatch<typename Mat::Value, transpose(Mat::sparsity)>::Type;
@@ -146,7 +199,7 @@ constexpr auto transpose(const Mat& A) {
 
 template<IsMatrix Mat>
     requires(Mat::sparsity.rows == 4 && Mat::sparsity.columns == 4)
-Matrix<typename Mat::Value, inverse(Mat::sparsity)> inverse(const Mat& m) {
+constexpr Matrix<typename Mat::Value, inverse(Mat::sparsity)> inverse(const Mat& m) {
     Matrix<typename Mat::Value, inverse(Mat::sparsity)> inv {};
     get<0, 0>(inv) = get<1, 1>(m) * get<2, 2>(m) * get<3, 3>(m) - get<1, 1>(m) * get<2, 3>(m) * get<3, 2>(m) -
                      get<2, 1>(m) * get<1, 2>(m) * get<3, 3>(m) + get<2, 1>(m) * get<1, 3>(m) * get<3, 2>(m) +

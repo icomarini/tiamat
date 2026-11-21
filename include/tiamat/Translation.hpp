@@ -6,7 +6,7 @@ namespace tmt {
 
 template<Size dimension>
     requires(dimension > 0)
-consteval auto translationSparsity() {
+consteval auto generateTranslationSparsity() {
     Sparsity<dimension + 1, dimension + 1> sparsity;
     template for (constexpr auto row : std::views::indices(dimension + 1)) {
         template for (constexpr auto column : std::views::indices(dimension + 1)) {
@@ -22,13 +22,19 @@ consteval auto translationSparsity() {
     return sparsity;
 }
 
+template<Size dimension>
+    requires(dimension > 0)
+constexpr auto translationSparsity = generateTranslationSparsity<dimension>();
+
 template<typename Value, Size dimension>
-class Translation : public Matrix<Value, translationSparsity<dimension>()> {
+    requires(dimension > 0)
+class Translation : public Matrix<Value, translationSparsity<dimension>> {
 public:
-    using Matrix<Value, translationSparsity<dimension>()>::Matrix;
+    using Matrix<Value, translationSparsity<dimension>>::Matrix;
 };
 
 template<typename Value, Size dimension>
+    requires(dimension > 0)
 constexpr Translation<Value, dimension> inverse(const Translation<Value, dimension>& M) {
     Translation<Value, dimension> inv;
     template for (constexpr auto row : std::views::indices(dimension)) {
@@ -37,23 +43,10 @@ constexpr Translation<Value, dimension> inverse(const Translation<Value, dimensi
     return inv;
 }
 
-// template<IsArithmetic Value>
-// struct Dispatch<Value, translationSparsity<0>()> {
-//     using Type = Translation<Value, 0>;
-// };
 
-template<IsArithmetic Value>
-struct Dispatch<Value, translationSparsity<1>()> {
-    using Type = Translation<Value, 1>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, translationSparsity<2>()> {
-    using Type = Translation<Value, 2>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, translationSparsity<3>()> {
-    using Type = Translation<Value, 3>;
+template<IsArithmetic Value, IsSparsity auto sparsity>
+    requires(sparsity == translationSparsity<sparsity.rows - 1>)
+struct Dispatch<Value, sparsity> {
+    using Type = Translation<Value, sparsity.rows - 1>;
 };
 }  // namespace tmt
