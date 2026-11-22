@@ -7,7 +7,8 @@
 namespace tmt {
 
 template<Size size>
-consteval auto columnVectorSparsity() {
+    requires(size > 0)
+consteval auto generateColumnVectorSparsity() {
     Sparsity<size, 1> sparsity;
     template for (constexpr auto row : std::views::indices(size)) {
         sparsity[row][0] = Entry::any;
@@ -15,41 +16,26 @@ consteval auto columnVectorSparsity() {
     return sparsity;
 }
 
-template<typename Value, Size s>
-class ColumnVector : public Matrix<Value, columnVectorSparsity<s>()> {
+template<Size size>
+    requires(size > 0)
+constexpr auto columnVectorSparsity = generateColumnVectorSparsity<size>();
+
+template<IsArithmetic Value, Size s>
+    requires(s > 0)
+class ColumnVector : public Matrix<Value, columnVectorSparsity<s>> {
 public:
     static constexpr auto size = s;
-    using Matrix<Value, columnVectorSparsity<size>()>::Matrix;
+    using Matrix<Value, columnVectorSparsity<size>>::Matrix;
 };
 
-// template<IsArithmetic Value>
-// struct Dispatch<Value, translationSparsity<0>()> {
-//     using Type = Translation<Value, 0>;
-// };
-
-template<IsArithmetic Value>
-struct Dispatch<Value, columnVectorSparsity<1>()> {
-    using Type = ColumnVector<Value, 1>;
+template<IsArithmetic Value, IsSparsity auto sparsity>
+    requires(sparsity == columnVectorSparsity<sparsity.rows>)
+struct Dispatch<Value, sparsity> {
+    using Type = ColumnVector<Value, sparsity.rows>;
 };
-
-template<IsArithmetic Value>
-struct Dispatch<Value, columnVectorSparsity<2>()> {
-    using Type = ColumnVector<Value, 2>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, columnVectorSparsity<3>()> {
-    using Type = ColumnVector<Value, 3>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, columnVectorSparsity<4>()> {
-    using Type = ColumnVector<Value, 4>;
-};
-
 
 template<Size size>
-consteval auto rowVectorSparsity() {
+consteval auto generateRowVectorSparsity() {
     Sparsity<1, size> sparsity;
     template for (constexpr auto column : std::views::indices(size)) {
         sparsity[0][column] = Entry::any;
@@ -57,36 +43,21 @@ consteval auto rowVectorSparsity() {
     return sparsity;
 }
 
+template<Size size>
+    requires(size > 0)
+constexpr auto rowVectorSparsity = generateRowVectorSparsity<size>();
+
 template<typename Value, Size s>
-class RowVector : public Matrix<Value, rowVectorSparsity<s>()> {
+class RowVector : public Matrix<Value, rowVectorSparsity<s>> {
 public:
     static constexpr auto size = s;
-    using Matrix<Value, rowVectorSparsity<size>()>::Matrix;
+    using Matrix<Value, rowVectorSparsity<size>>::Matrix;
 };
 
-// template<IsArithmetic Value>
-// struct Dispatch<Value, translationSparsity<0>()> {
-//     using Type = Translation<Value, 0>;
-// };
-
-// template<IsArithmetic Value>
-// struct Dispatch<Value, rowVectorSparsity<1>()> {
-//     using Type = RowVector<Value, 1>;
-// };
-
-template<IsArithmetic Value>
-struct Dispatch<Value, rowVectorSparsity<2>()> {
-    using Type = RowVector<Value, 2>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, rowVectorSparsity<3>()> {
-    using Type = RowVector<Value, 3>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, rowVectorSparsity<4>()> {
-    using Type = RowVector<Value, 4>;
+template<IsArithmetic Value, IsSparsity auto sparsity>
+    requires(sparsity == rowVectorSparsity<sparsity.columns>)
+struct Dispatch<Value, sparsity> {
+    using Type = RowVector<Value, sparsity.columns>;
 };
 
 template<typename T>

@@ -262,6 +262,7 @@ void testVector0() {
     static_assert(decltype(x)::rows == 4);
     static_assert(decltype(x)::columns == 1);
     static_assert(IsVector<decltype(x)>);
+    static_assert(decltype(x)::sparsity == columnVectorSparsity<4>);
     static_assert(std::is_same_v<std::decay_t<decltype(x)>, ColumnVector<int, 4>>);
     static_assert(valid<decltype(x)::sparsity, 0>());
     static_assert(get<0>(x) == 2);
