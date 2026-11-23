@@ -95,6 +95,7 @@ constexpr auto norm(const Vec& vec) {
 }
 
 template<IsVector Vec>
+    requires(std::floating_point<typename Vec::Value>)
 constexpr auto normalize(const Vec& vec) {
     const auto n = norm(vec);
     if (n > typename Vec::Value { 0 }) {

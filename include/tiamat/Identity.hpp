@@ -4,7 +4,8 @@
 namespace tmt {
 
 template<Size size>
-consteval auto identitySparsity() {
+    requires(size > 0)
+consteval auto generateIdentitySparsity() {
     Sparsity<size, size> sparsity;
     template for (constexpr auto row : std::views::indices(size)) {
         template for (constexpr auto column : std::views::indices(size)) {
@@ -14,25 +15,20 @@ consteval auto identitySparsity() {
     return sparsity;
 }
 
+template<Size size>
+    requires(size > 0)
+constexpr auto identitySparsity = generateIdentitySparsity<size>();
+
 template<typename Value, Size size>
-class Identity : public Matrix<Value, identitySparsity<size>()> {
+class Identity : public Matrix<Value, identitySparsity<size>> {
 public:
-    using Matrix<Value, identitySparsity<size>()>::Matrix;
+    using Matrix<Value, identitySparsity<size>>::Matrix;
 };
 
-template<IsArithmetic Value>
-struct Dispatch<Value, identitySparsity<1>()> {
-    using Type = Identity<Value, 1>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, identitySparsity<2>()> {
-    using Type = Identity<Value, 2>;
-};
-
-template<IsArithmetic Value>
-struct Dispatch<Value, identitySparsity<3>()> {
-    using Type = Identity<Value, 3>;
+template<IsArithmetic Value, IsSparsity auto sparsity>
+    requires(sparsity == identitySparsity<sparsity.rows>)
+struct Dispatch<Value, sparsity> {
+    using Type = Identity<Value, sparsity.rows>;
 };
 
 template<IsArithmetic Value, Size size>

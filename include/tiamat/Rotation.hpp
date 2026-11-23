@@ -46,11 +46,11 @@ public:
     }
 
     template<std::floating_point V>
-    Rotation(const V& angle)
+    constexpr Rotation(const V& radians)
         requires(dimension == 2)
     {
-        const auto sina  = std::sin(angle);
-        const auto cosa  = std::cos(angle);
+        const auto sina  = std::sin(radians);
+        const auto cosa  = std::cos(radians);
         get<0, 0>(*this) = cosa;
         get<0, 1>(*this) = -sina;
         get<1, 0>(*this) = sina;

@@ -34,7 +34,7 @@ class Perspective : public Matrix<Value, perspectiveSparsity> {
 public:
     // using Matrix<Value, perspectiveSparsity>::Matrix;
 
-    Perspective(const Value& fovy, const Value& aspect, const Value& zNear, const Value& zFar) {
+    constexpr Perspective(const Value& fovy, const Value& aspect, const Value& zNear, const Value& zFar) {
         constexpr Value one { 1 };
         constexpr Value half = one / Value { 2 };
         get<1, 1>(*this)     = -one / std::tan(half * fovy);

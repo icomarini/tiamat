@@ -12,7 +12,7 @@ enum class Entry {
     any,
 };
 
-constexpr Entry operator+(const Entry a, const Entry b) {
+consteval Entry operator+(const Entry a, const Entry b) {
     static constexpr std::array<std::array<Entry, 4>, 4> table {
         //           Entry::zero  Entry::pone  Entry::mone  Entry::any
         std::array { Entry::zero, Entry::pone, Entry::mone, Entry::any }, // Entry::zero
@@ -23,7 +23,7 @@ constexpr Entry operator+(const Entry a, const Entry b) {
     return table[static_cast<uint8_t>(a)][static_cast<uint8_t>(b)];
 }
 
-constexpr Entry operator*(const Entry a, const Entry b) {
+consteval Entry operator*(const Entry a, const Entry b) {
     static constexpr std::array<std::array<Entry, 4>, 4> table {
         //           Entry::zero  Entry::pone  Entry::mone  Entry::any
         std::array { Entry::zero, Entry::zero, Entry::zero, Entry::zero }, // Entry::zero
@@ -123,7 +123,7 @@ consteval bool operator==(const A& a, const B& b) {
     return true;
 }
 
-constexpr auto operator*(const IsSparsity auto A, const IsSparsity auto B)
+consteval auto operator*(const IsSparsity auto A, const IsSparsity auto B)
     requires(A.columns == B.rows)
 {
     Sparsity<A.rows, B.columns> C {};
@@ -137,7 +137,7 @@ constexpr auto operator*(const IsSparsity auto A, const IsSparsity auto B)
     return C;
 }
 
-constexpr auto operator*(const IsSparsity auto A, const Entry a) {
+consteval auto operator*(const IsSparsity auto A, const Entry a) {
     Sparsity<A.rows, A.columns> B {};
     template for (constexpr auto row : std::views::indices(A.rows)) {
         template for (constexpr auto column : std::views::indices(A.columns)) {
@@ -147,7 +147,7 @@ constexpr auto operator*(const IsSparsity auto A, const Entry a) {
     return B;
 }
 
-constexpr auto transpose(const IsSparsity auto A) {
+consteval auto transpose(const IsSparsity auto A) {
     Sparsity<A.columns, A.rows> B {};
     template for (constexpr auto row : std::views::indices(A.rows)) {
         template for (constexpr auto column : std::views::indices(A.columns)) {
@@ -157,7 +157,7 @@ constexpr auto transpose(const IsSparsity auto A) {
     return B;
 }
 
-constexpr auto inverse(const IsSparsity auto A) {
+consteval auto inverse(const IsSparsity auto A) {
     Sparsity<A.rows, A.columns> B {};
     template for (constexpr auto row : std::views::indices(A.rows)) {
         template for (constexpr auto column : std::views::indices(A.columns)) {

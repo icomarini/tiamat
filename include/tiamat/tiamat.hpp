@@ -8,3 +8,4 @@
 #include "tiamat/Scale.hpp"
 #include "tiamat/Affine.hpp"
 #include "tiamat/Perspective.hpp"
+#include "tiamat/View.hpp"

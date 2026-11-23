@@ -29,6 +29,18 @@ class Affine : public Matrix<Value, affineSparsity<dimension>> {
 public:
     using Matrix<Value, affineSparsity<dimension>>::Matrix;
     using Matrix<Value, affineSparsity<dimension>>::operator=;
+
+    constexpr Affine() {
+        template for (constexpr auto row : std::views::indices(dimension)) {
+            template for (constexpr auto column : std::views::indices(dimension)) {
+                if constexpr (row == column) {
+                    get<row, column>(*this) = one<Value>;
+                } else {
+                    get<row, column>(*this) = zero<Value>;
+                }
+            }
+        }
+    }
 };
 
 template<IsArithmetic Value, IsSparsity auto sparsity>
